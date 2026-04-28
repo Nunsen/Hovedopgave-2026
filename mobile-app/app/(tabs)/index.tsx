@@ -1,98 +1,163 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { apiBaseUrl, fetchDashboard } from '@/lib/api';
+
+type DashboardState = Awaited<ReturnType<typeof fetchDashboard>>;
 
 export default function HomeScreen() {
+  const [data, setData] = useState<DashboardState | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  async function loadDashboard() {
+    try {
+      setLoading(true);
+      setError(null);
+      const dashboard = await fetchDashboard();
+      setData(dashboard);
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">HVA SÅ!</ThemedText>
-        <HelloWave />
+      headerBackgroundColor={{ light: '#D8E8E2', dark: '#1E2C2A' }}
+      headerImage={<View style={styles.headerBlob} />}>
+      <ThemedView style={styles.hero}>
+        <ThemedText type="title">Resident Hub</ThemedText>
+        <ThemedText>Spring Boot API connected to Expo at {apiBaseUrl}</ThemedText>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
+      {loading ? (
+        <ThemedView style={styles.panel}>
+          <ActivityIndicator size="large" />
+          <ThemedText>Loading community data...</ThemedText>
+        </ThemedView>
+      ) : null}
+
+      {error ? (
+        <ThemedView style={styles.panel}>
+          <ThemedText type="subtitle">Connection issue</ThemedText>
+          <ThemedText>{error}</ThemedText>
+          <ThemedText>
+            Set `EXPO_PUBLIC_API_BASE_URL` or `EXPO_PUBLIC_API_HOST` if your device cannot reach
+            `localhost`.
+          </ThemedText>
+          <Pressable onPress={loadDashboard} style={styles.button}>
+            <ThemedText type="defaultSemiBold">Retry</ThemedText>
+          </Pressable>
+        </ThemedView>
+      ) : null}
+
+      {data ? (
+        <>
+          <ThemedView style={styles.metricsRow}>
+            <MetricCard label="Residents" value={String(data.users.length)} />
+            <MetricCard label="Facilities" value={String(data.facilities.length)} />
+            <MetricCard label="Bookings" value={String(data.bookings.length)} />
+          </ThemedView>
+
+          <ThemedView style={styles.panel}>
+            <ThemedText type="subtitle">Upcoming booking</ThemedText>
+            {data.bookings[0] ? (
+              <>
+                <ThemedText type="defaultSemiBold">
+                  {data.bookings[0].facility.name} • {data.bookings[0].date}
+                </ThemedText>
+                <ThemedText>
+                  {data.bookings[0].startTime} - {data.bookings[0].endTime} for{' '}
+                  {data.bookings[0].user.firstName} {data.bookings[0].user.lastName}
+                </ThemedText>
+              </>
+            ) : (
+              <ThemedText>No bookings found.</ThemedText>
+            )}
+          </ThemedView>
+
+          <ThemedView style={styles.panel}>
+            <ThemedText type="subtitle">Important post</ThemedText>
+            {data.posts[0] ? (
+              <>
+                <ThemedText type="defaultSemiBold">{data.posts[0].title}</ThemedText>
+                <ThemedText>{data.posts[0].content}</ThemedText>
+              </>
+            ) : (
+              <ThemedText>No posts found.</ThemedText>
+            )}
+          </ThemedView>
+
+          <ThemedView style={styles.panel}>
+            <ThemedText type="subtitle">Facilities</ThemedText>
+            {data.facilities.map((facility) => (
+              <ThemedText key={facility.facilityId}>
+                {facility.name} • {facility.type} • {facility.status}
+              </ThemedText>
+            ))}
+          </ThemedView>
+        </>
+      ) : null}
     </ParallaxScrollView>
   );
 }
 
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <ThemedView style={styles.metricCard}>
+      <ThemedText type="defaultSemiBold">{value}</ThemedText>
+      <ThemedText>{label}</ThemedText>
+    </ThemedView>
+  );
+}
+
 const styles = StyleSheet.create({
-  titleContainer: {
+  hero: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  panel: {
+    gap: 8,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: 'rgba(127, 176, 157, 0.16)',
+  },
+  metricsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    gap: 12,
+    marginBottom: 12,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  metricCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(36, 91, 76, 0.14)',
+    gap: 6,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  button: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: 'rgba(36, 91, 76, 0.22)',
+  },
+  headerBlob: {
+    width: 220,
+    height: 220,
+    borderRadius: 999,
+    backgroundColor: '#7fb09d',
     position: 'absolute',
+    right: -30,
+    top: 10,
   },
 });
