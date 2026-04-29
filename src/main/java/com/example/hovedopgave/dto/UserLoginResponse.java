@@ -4,6 +4,7 @@ public record UserLoginResponse(
         Integer userId,
         String fullName,
         String email,
+        String role,
         String message
 ) {
 }

@@ -45,16 +45,32 @@ export type LoginUserPayload = {
   password: string;
 };
 
+export type ResetPasswordPayload = {
+  email: string;
+  newPassword: string;
+};
+
 export type LoginUserSuccess = {
   userId: number;
   fullName: string;
   email: string;
+  role: string;
   message: string;
 };
 
 export type LoginUserError = {
   message: string;
   fieldErrors?: Partial<Record<keyof LoginUserPayload, string>>;
+};
+
+export type ResetPasswordSuccess = {
+  email: string;
+  message: string;
+};
+
+export type ResetPasswordError = {
+  message: string;
+  fieldErrors?: Partial<Record<keyof ResetPasswordPayload, string>>;
 };
 
 export type RegisterUserSuccess = {
@@ -115,6 +131,35 @@ export async function loginUser(
     }
 
     return { data: responseBody as LoginUserSuccess };
+  } catch (error) {
+    const timedOut = error instanceof Error && error.name === 'AbortError';
+    return {
+      error: {
+        message: timedOut
+          ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend koerer paa ${API_BASE_URL}.`
+          : `Forbindelsen til serveren fejlede. Kontroller backend og netvaerk. Aktiv URL: ${API_BASE_URL}`,
+      },
+    };
+  }
+}
+
+export async function resetPassword(
+  payload: ResetPasswordPayload,
+): Promise<{ data?: ResetPasswordSuccess; error?: ResetPasswordError }> {
+  try {
+    const { response, responseBody } = await fetchJson('/users/reset-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      return { error: responseBody as ResetPasswordError };
+    }
+
+    return { data: responseBody as ResetPasswordSuccess };
   } catch (error) {
     const timedOut = error instanceof Error && error.name === 'AbortError';
     return {

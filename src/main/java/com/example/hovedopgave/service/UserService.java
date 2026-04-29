@@ -4,6 +4,8 @@ import com.example.hovedopgave.dto.UserRegistrationRequest;
 import com.example.hovedopgave.dto.UserRegistrationResponse;
 import com.example.hovedopgave.dto.UserLoginRequest;
 import com.example.hovedopgave.dto.UserLoginResponse;
+import com.example.hovedopgave.dto.UserResetPasswordRequest;
+import com.example.hovedopgave.dto.UserResetPasswordResponse;
 import com.example.hovedopgave.model.User;
 import com.example.hovedopgave.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -81,7 +83,30 @@ public class UserService {
                 user.getUserId(),
                 user.getFirstName() + " " + user.getLastName(),
                 user.getEmail(),
+                user.getRole(),
                 "Login gennemfoert."
+        );
+    }
+
+    public UserResetPasswordResponse resetPassword(UserResetPasswordRequest request) {
+        Map<String, String> fieldErrors = validateResetPasswordRequest(request);
+
+        if (!fieldErrors.isEmpty()) {
+            throw new UserValidationException("Indtast email og nyt kodeord korrekt.", fieldErrors);
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(request.email().trim())
+                .orElseThrow(() -> new UserValidationException(
+                        "Brugeren findes ikke.",
+                        Map.of("email", "Der findes ingen bruger med denne email.")
+                ));
+
+        user.setPasswordHash(hashPassword(request.newPassword()));
+        userRepository.save(user);
+
+        return new UserResetPasswordResponse(
+                user.getEmail(),
+                "Adgangskoden er opdateret."
         );
     }
 
@@ -170,6 +195,32 @@ public class UserService {
 
         if (password == null || password.isBlank()) {
             fieldErrors.put("password", "Adgangskode er obligatorisk.");
+        }
+
+        return fieldErrors;
+    }
+
+    private Map<String, String> validateResetPasswordRequest(UserResetPasswordRequest request) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+
+        if (request == null) {
+            fieldErrors.put("request", "Request body mangler.");
+            return fieldErrors;
+        }
+
+        String email = normalize(request.email());
+        String newPassword = request.newPassword();
+
+        if (email == null) {
+            fieldErrors.put("email", "Email er obligatorisk.");
+        } else if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            fieldErrors.put("email", "Indtast en gyldig email.");
+        }
+
+        if (newPassword == null || newPassword.isBlank()) {
+            fieldErrors.put("newPassword", "Nyt kodeord er obligatorisk.");
+        } else if (newPassword.length() < 8) {
+            fieldErrors.put("newPassword", "Det nye kodeord skal mindst vaere 8 tegn.");
         }
 
         return fieldErrors;

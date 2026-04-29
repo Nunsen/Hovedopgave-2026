@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+
 import {
   ActivityIndicator,
   Alert,
@@ -72,9 +73,12 @@ export default function LoginScreen() {
     }
 
     if (result.data) {
-      //console.log('SUCCESS', result.data);
-      //Alert.alert('Success', 'Du videresendes til Forside.');
-      router.replace('/home');
+      //Alert.alert(
+      //    'Login debug',
+      //    `Email: ${result.data.email}\nRole: ${result.data.role ?? 'UNDEFINED'}`
+      //);
+      const nextRoute = result.data.role === 'ADMIN' ? '/admin' : '/home';
+      router.replace(nextRoute);
     }
   };
 
@@ -113,7 +117,9 @@ export default function LoginScreen() {
           <Text style={styles.fieldError}>{fieldErrors.password}</Text>
         ) : null}
 
-        <Text style={styles.forgot}>Glemt adgangskode?</Text>
+        <TouchableOpacity onPress={() => router.push('/resetPassword')}>
+          <Text style={styles.forgot}>Glemt adgangskode?</Text>
+        </TouchableOpacity>
         {generalError ? <Text style={styles.generalError}>{generalError}</Text> : null}
         <Text style={styles.debugText}>Backend: {API_BASE_URL}</Text>
 

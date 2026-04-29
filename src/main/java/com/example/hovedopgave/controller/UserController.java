@@ -4,6 +4,8 @@ import com.example.hovedopgave.dto.UserRegistrationRequest;
 import com.example.hovedopgave.dto.UserRegistrationResponse;
 import com.example.hovedopgave.dto.UserLoginRequest;
 import com.example.hovedopgave.dto.UserLoginResponse;
+import com.example.hovedopgave.dto.UserResetPasswordRequest;
+import com.example.hovedopgave.dto.UserResetPasswordResponse;
 import com.example.hovedopgave.dto.ValidationErrorResponse;
 import com.example.hovedopgave.model.User;
 import com.example.hovedopgave.repository.UserRepository;
@@ -45,6 +47,12 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponse> loginUser(@RequestBody UserLoginRequest request) {
         UserLoginResponse response = userService.loginUser(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<UserResetPasswordResponse> resetPassword(@RequestBody UserResetPasswordRequest request) {
+        UserResetPasswordResponse response = userService.resetPassword(request);
         return ResponseEntity.ok(response);
     }
 
