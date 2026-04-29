@@ -1,7 +1,7 @@
 package com.example.hovedopgave.controller;
 
 import com.example.hovedopgave.model.Facility;
-import com.example.hovedopgave.repository.FacilityRepository;
+import com.example.hovedopgave.service.FacilityService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,14 +12,14 @@ import java.util.List;
 @RequestMapping("/api/facilities")
 public class FacilityController {
 
-    private final FacilityRepository facilityRepository;
+    private final FacilityService facilityService;
 
-    public FacilityController(FacilityRepository facilityRepository) {
-        this.facilityRepository = facilityRepository;
+    public FacilityController(FacilityService facilityService) {
+        this.facilityService = facilityService;
     }
 
     @GetMapping
-    public List<Facility> getFacilities() {
-        return facilityRepository.findAll();
+    public List<Facility> getAllFacilities() {
+        return facilityService.getAllFacilities();
     }
 }
