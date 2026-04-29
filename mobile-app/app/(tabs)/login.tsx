@@ -1,148 +1,223 @@
 import { useRouter } from 'expo-router';
-
-// React Native UI komponenter
+import { useState } from 'react';
 import {
-  SafeAreaView,     // Undgår notch/statusbar overlap
-  StyleSheet,       // Styling (som CSS)
-  Text,             // Tekst
-  TextInput,        // Input felter
-  TouchableOpacity, // Knapper
-  View,             // Container (div)
-  Image,            // Billede/logo
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-// Login screen komponent
-export default function LoginScreen() {
+import { API_BASE_URL, loginUser, LoginUserPayload } from '@/lib/api';
 
-  // Hook til navigation (skifte mellem screens)
+type FieldErrors = Partial<Record<keyof LoginUserPayload, string>>;
+
+export default function LoginScreen() {
   const router = useRouter();
+  const [form, setForm] = useState<LoginUserPayload>({ email: '', password: '' });
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const updateField = (field: keyof LoginUserPayload, value: string) => {
+    setForm((currentForm) => ({ ...currentForm, [field]: value }));
+    setFieldErrors((currentErrors) => ({ ...currentErrors, [field]: undefined }));
+  };
+
+  const validateClientSide = () => {
+    const nextErrors: FieldErrors = {};
+
+    if (!form.email.trim()) {
+      nextErrors.email = 'Email er obligatorisk.';
+    }
+
+    if (!form.password.trim()) {
+      nextErrors.password = 'Adgangskode er obligatorisk.';
+    }
+
+    return nextErrors;
+  };
+
+  const handleLogin = async () => {
+    console.log('LOGIN START');
+
+    setGeneralError(null);
+    const nextErrors = validateClientSide();
+
+    if (Object.keys(nextErrors).length > 0) {
+      console.log('VALIDATION FAILED', nextErrors);
+      setFieldErrors(nextErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    console.log('CALLING API');
+
+    const result = await loginUser(form);
+
+    console.log('API RESULT', result);
+
+    setIsSubmitting(false);
+
+    if (result.error) {
+      console.log('ERROR', result.error);
+      setGeneralError(result.error.message);
+      Alert.alert('Login failed', result.error.message);
+      return;
+    }
+
+    if (result.data) {
+      //console.log('SUCCESS', result.data);
+      //Alert.alert('Success', 'Du videresendes til Forside.');
+      router.replace('/home');
+    }
+  };
 
   return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.inner}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.inner}>
+        <Image
+          source={require('@/assets/images/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-          {/* Logo */}
-          <Image
-              source={require('@/assets/images/logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-          />
+        <Text style={styles.title}>Soranernes Hus</Text>
+        <Text style={styles.subtitle}>Booking, fællesskab og overblik</Text>
 
-          {/* App navn */}
-          <Text style={styles.title}>Soranernes Hus</Text>
+        <TextInput
+          placeholder="Email"
+          placeholderTextColor="#8A8A8A"
+          style={[styles.input, fieldErrors.email ? styles.inputError : null]}
+          value={form.email}
+          onChangeText={(value) => updateField('email', value)}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        {fieldErrors.email ? <Text style={styles.fieldError}>{fieldErrors.email}</Text> : null}
 
-          {/* Kort beskrivelse (giver identitet til appen) */}
-          <Text style={styles.subtitle}>
-            Booking, fællesskab og overblik
-          </Text>
+        <TextInput
+          placeholder="Password"
+          placeholderTextColor="#8A8A8A"
+          secureTextEntry
+          style={[styles.input, fieldErrors.password ? styles.inputError : null]}
+          value={form.password}
+          onChangeText={(value) => updateField('password', value)}
+        />
+        {fieldErrors.password ? (
+          <Text style={styles.fieldError}>{fieldErrors.password}</Text>
+        ) : null}
 
-          {/* Email input */}
-          <TextInput
-              placeholder="Email"
-              placeholderTextColor="#8A8A8A"
-              style={styles.input}
-          />
+        <Text style={styles.forgot}>Glemt adgangskode?</Text>
+        {generalError ? <Text style={styles.generalError}>{generalError}</Text> : null}
+        <Text style={styles.debugText}>Backend: {API_BASE_URL}</Text>
 
-          {/* Password input */}
-          <TextInput
-              placeholder="Password"
-              placeholderTextColor="#8A8A8A"
-              secureTextEntry // Skjuler tekst (••••)
-              style={styles.input}
-          />
-
-          {/* Glemt kode link (kun tekst lige nu) */}
-          <Text style={styles.forgot}>
-            Glemt adgangskode?
-          </Text>
-
-          {/* Login knap */}
-          <TouchableOpacity
-              style={styles.loginButton}
-              activeOpacity={0.8} // Giver "tryk" effekt
-          >
+        <TouchableOpacity
+          style={[styles.loginButton, isSubmitting ? styles.buttonDisabled : null]}
+          activeOpacity={0.8}
+          onPress={handleLogin}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
             <Text style={styles.loginText}>Login</Text>
-          </TouchableOpacity>
+          )}
+        </TouchableOpacity>
 
-          {/* Opret konto knap */}
-          <TouchableOpacity
-              style={styles.registerButton}
-              activeOpacity={0.8}
-              onPress={() => router.push('/register')} // Navigerer til register screen
-          >
-            <Text style={styles.registerText}>
-              Opret en konto
-            </Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.registerButton}
+          activeOpacity={0.8}
+          onPress={() => router.push('/register')}
+        >
+          <Text style={styles.registerText}>Opret en konto</Text>
+        </TouchableOpacity>
 
-        </View>
-      </SafeAreaView>
+        <TouchableOpacity
+          style={styles.testButton}
+          activeOpacity={0.8}
+          onPress={() => router.push('/home')}
+        >
+          <Text style={styles.testButtonText}>Test forside</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 
-// Styling (CSS-lignende)
 const styles = StyleSheet.create({
-
-  // Hele skærmen
   container: {
-    flex: 1, // Fylder hele skærmen
-    backgroundColor: '#fff', // Lys grå baggrund (mere moderne end helt hvid)
-    justifyContent: 'center', // Centrer vertikalt
-    alignItems: 'center', // Centrer horisontalt
-  },
-
-  // Wrapper til indhold
-  inner: {
-    width: '82%', // Begrænser bredden (bedre UX)
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Logo styling
+  inner: {
+    width: '82%',
+    alignItems: 'center',
+  },
   logo: {
     width: 185,
     height: 185,
     marginBottom: 14,
   },
-
-  // Titel (Soranernes Hus)
   title: {
     fontSize: 26,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 6,
   },
-
-  // Undertitel
   subtitle: {
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 34,
     textAlign: 'center',
   },
-
-  // Input felter
   input: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#D1D5DB', // Lysere border = mere moderne
-    borderRadius: 30, // Runde hjørner
+    borderColor: '#D1D5DB',
+    borderRadius: 30,
     paddingVertical: 14,
     paddingHorizontal: 22,
-    marginBottom: 14,
+    marginBottom: 10,
     backgroundColor: '#FFFFFF',
     fontSize: 16,
     color: '#111827',
   },
-
-  // "Glemt adgangskode"
+  inputError: {
+    borderColor: '#b42318',
+  },
+  fieldError: {
+    width: '100%',
+    marginTop: -4,
+    marginBottom: 10,
+    color: '#b42318',
+    fontSize: 13,
+  },
   forgot: {
     fontSize: 13,
-    color: '#3F7FC4', // Klikbar farve
-    marginBottom: 24,
+    color: '#3F7FC4',
+    marginBottom: 18,
     marginTop: 2,
   },
-
-  // Login knap (primary)
+  generalError: {
+    width: '100%',
+    color: '#b42318',
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  debugText: {
+    width: '100%',
+    color: '#666',
+    fontSize: 12,
+    marginBottom: 16,
+  },
   loginButton: {
     width: '100%',
     backgroundColor: '#3F7FC4',
@@ -151,15 +226,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
-
-  // Login tekst
+  buttonDisabled: {
+    opacity: 0.7,
+  },
   loginText: {
     color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '700',
   },
-
-  // Register knap (secondary / outline)
   registerButton: {
     width: '100%',
     backgroundColor: '#FFFFFF',
@@ -169,11 +243,19 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
   },
-
-  // Register tekst
   registerText: {
     color: '#3F7FC4',
     fontSize: 17,
     fontWeight: '700',
+  },
+  testButton: {
+    marginTop: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  testButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

@@ -17,8 +17,8 @@ import {
   View,              // Container/indpakning
 } from 'react-native';
 
-// Importerer backend-url, typen for brugerdata og funktionen til at oprette bruger
-import { API_BASE_URL, RegisterUserPayload, registerUser } from '@/lib/api';
+// Importerer typen for brugerdata og funktionen til at oprette bruger
+import { RegisterUserPayload, registerUser } from '@/lib/api';
 
 // Type til fejlbeskeder på de enkelte felter
 type FieldErrors = Partial<Record<keyof RegisterUserPayload, string>>;
@@ -153,7 +153,6 @@ export default function RegisterScreen() {
             <Text style={styles.backText}>Tilbage</Text>
           </TouchableOpacity>
 
-          
 
           {/* Formular-container */}
           <View style={styles.card}>
@@ -228,9 +227,6 @@ export default function RegisterScreen() {
             {/* Viser generel fejlbesked */}
             {generalError ? <Text style={styles.generalError}>{generalError}</Text> : null}
 
-            {/* Debug-tekst, så man kan se hvilken backend appen kalder */}
-            <Text style={styles.debugText}>Backend: {API_BASE_URL}</Text>
-
             {/* Submit-knap */}
             <TouchableOpacity
                 style={[styles.submitButton, isSubmitting ? styles.submitButtonDisabled : null]}
@@ -253,9 +249,9 @@ export default function RegisterScreen() {
 
 // Type for props til FormField-komponenten
 type FormFieldProps = {
-  label: string; // Tekst over inputfeltet
-  placeholder: string; // Tekst inde i inputfeltet før brugeren skriver
-  value: string; // Værdien i inputfeltet
+  label: string;
+  placeholder: string;
+  value: string;
   onChangeText: (value: string) => void; // Funktion der kaldes når brugeren skriver
   error?: string; // Valgfri fejlbesked
   keyboardType?: 'default' | 'email-address' | 'phone-pad'; // Type tastatur

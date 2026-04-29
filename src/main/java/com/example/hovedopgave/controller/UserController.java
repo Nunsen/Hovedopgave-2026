@@ -2,6 +2,8 @@ package com.example.hovedopgave.controller;
 
 import com.example.hovedopgave.dto.UserRegistrationRequest;
 import com.example.hovedopgave.dto.UserRegistrationResponse;
+import com.example.hovedopgave.dto.UserLoginRequest;
+import com.example.hovedopgave.dto.UserLoginResponse;
 import com.example.hovedopgave.dto.ValidationErrorResponse;
 import com.example.hovedopgave.model.User;
 import com.example.hovedopgave.repository.UserRepository;
@@ -38,6 +40,12 @@ public class UserController {
     public ResponseEntity<UserRegistrationResponse> registerUser(@RequestBody UserRegistrationRequest request) {
         UserRegistrationResponse response = userService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<UserLoginResponse> loginUser(@RequestBody UserLoginRequest request) {
+        UserLoginResponse response = userService.loginUser(request);
+        return ResponseEntity.ok(response);
     }
 
     @ExceptionHandler(UserService.UserValidationException.class)

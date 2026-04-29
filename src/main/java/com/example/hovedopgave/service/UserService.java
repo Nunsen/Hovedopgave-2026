@@ -2,6 +2,8 @@ package com.example.hovedopgave.service;
 
 import com.example.hovedopgave.dto.UserRegistrationRequest;
 import com.example.hovedopgave.dto.UserRegistrationResponse;
+import com.example.hovedopgave.dto.UserLoginRequest;
+import com.example.hovedopgave.dto.UserLoginResponse;
 import com.example.hovedopgave.model.User;
 import com.example.hovedopgave.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -52,6 +54,34 @@ public class UserService {
                 request.fullName().trim(),
                 savedUser.getEmail(),
                 "SCAN_ACTIVATION_CODE"
+        );
+    }
+
+    public UserLoginResponse loginUser(UserLoginRequest request) {
+        Map<String, String> fieldErrors = validateLoginRequest(request);
+
+        if (!fieldErrors.isEmpty()) {
+            throw new UserValidationException("Indtast email og adgangskode.", fieldErrors);
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(request.email().trim())
+                .orElseThrow(() -> new UserValidationException(
+                        "Email eller adgangskode er forkert.",
+                        Map.of("email", "Brugeren findes ikke.")
+                ));
+
+        if (!matchesPassword(request.password(), user.getPasswordHash())) {
+            throw new UserValidationException(
+                    "Email eller adgangskode er forkert.",
+                    Map.of("password", "Adgangskoden er forkert.")
+            );
+        }
+
+        return new UserLoginResponse(
+                user.getUserId(),
+                user.getFirstName() + " " + user.getLastName(),
+                user.getEmail(),
+                "Login gennemfoert."
         );
     }
 
@@ -123,6 +153,28 @@ public class UserService {
         return fieldErrors;
     }
 
+    private Map<String, String> validateLoginRequest(UserLoginRequest request) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+
+        if (request == null) {
+            fieldErrors.put("request", "Request body mangler.");
+            return fieldErrors;
+        }
+
+        String email = normalize(request.email());
+        String password = request.password();
+
+        if (email == null) {
+            fieldErrors.put("email", "Email er obligatorisk.");
+        }
+
+        if (password == null || password.isBlank()) {
+            fieldErrors.put("password", "Adgangskode er obligatorisk.");
+        }
+
+        return fieldErrors;
+    }
+
     private String normalize(String value) {
         if (value == null) {
             return null;
@@ -157,6 +209,23 @@ public class UserService {
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("Kunne ikke hashe adgangskoden.", exception);
         }
+    }
+
+    private boolean matchesPassword(String rawPassword, String storedHash) {
+        if (rawPassword == null || storedHash == null) {
+            return false;
+        }
+
+        if (hashPassword(rawPassword).equals(storedHash) || rawPassword.equals(storedHash)) {
+            return true;
+        }
+
+        if (storedHash.startsWith("demo-hash-")) {
+            String demoPassword = storedHash.substring("demo-hash-".length());
+            return rawPassword.equalsIgnoreCase(demoPassword);
+        }
+
+        return false;
     }
 
     private record NameParts(String firstName, String lastName) {
