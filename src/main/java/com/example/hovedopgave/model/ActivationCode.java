@@ -35,8 +35,8 @@ public class ActivationCode {
     @Column(name = "expiration_date", nullable = false)
     private LocalDateTime expirationDate;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id")
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "user_id", nullable = true)
     @JsonIgnoreProperties({
             "activationCodes", "bookings", "posts", "comments",
             "createdGroups", "groupMembers", "groupMessages"

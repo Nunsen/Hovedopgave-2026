@@ -1,6 +1,7 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
-const localIp = process.env.EXPO_PUBLIC_API_HOST ?? '192.168.1.10';
+const localIp = process.env.EXPO_PUBLIC_API_HOST ?? '10.136.138.149';
+const apiPort = process.env.EXPO_PUBLIC_API_PORT ?? '8080';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -9,6 +10,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: config.version ?? '1.0.0',
   extra: {
     ...config.extra,
-    apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? `http://${localIp}:8080/api`,
+    apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? `http://${localIp}:${apiPort}/api`,
   },
 });

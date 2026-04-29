@@ -1,20 +1,29 @@
+// Importerer router, så vi kan navigere mellem sider
 import { useRouter } from 'expo-router';
+
+// Importerer useState, som bruges til at gemme og ændre data i komponenten
 import { useState } from 'react';
+
+// Import af UI-komponenter fra React Native
 import {
-  ActivityIndicator,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+  ActivityIndicator, // Loader/spinner mens brugeren oprettes
+  Alert,             // Viser en popup-besked ved fejl
+  SafeAreaView,      // Sikrer at indhold ikke rammer statusbar/notch
+  ScrollView,        // Gør siden scroll-bar, hvis der er meget indhold
+  StyleSheet,        // Bruges til styling
+  Text,              // Viser tekst
+  TextInput,         // Inputfelter
+  TouchableOpacity,  // Klikbare knapper
+  View,              // Container/indpakning
 } from 'react-native';
 
-import { RegisterUserPayload, registerUser } from '@/lib/api';
+// Importerer backend-url, typen for brugerdata og funktionen til at oprette bruger
+import { API_BASE_URL, RegisterUserPayload, registerUser } from '@/lib/api';
 
+// Type til fejlbeskeder på de enkelte felter
 type FieldErrors = Partial<Record<keyof RegisterUserPayload, string>>;
 
+// Startværdi for formularen
 const initialForm: RegisterUserPayload = {
   fullName: '',
   email: '',
@@ -26,68 +35,99 @@ const initialForm: RegisterUserPayload = {
 };
 
 export default function RegisterScreen() {
-  const router = useRouter();
+  const router = useRouter(); // Bruges til navigation
+
+  // State til alle formularfelter
   const [form, setForm] = useState<RegisterUserPayload>(initialForm);
+
+  // State til fejlbeskeder på specifikke felter
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  // State til en generel fejlbesked
   const [generalError, setGeneralError] = useState<string | null>(null);
+
+  // State der viser om formularen er ved at blive sendt
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Opdaterer et bestemt felt i formularen
   const updateField = (field: keyof RegisterUserPayload, value: string) => {
     setForm((currentForm) => ({ ...currentForm, [field]: value }));
+
+    // Fjerner fejlbeskeden fra feltet, når brugeren retter i det
     setFieldErrors((currentErrors) => ({ ...currentErrors, [field]: undefined }));
   };
 
+  // Validerer formularen lokalt inden data sendes til backend
   const validateClientSide = () => {
     const nextErrors: FieldErrors = {};
 
+    // Tjekker om alle felter er udfyldt
     (Object.keys(form) as (keyof RegisterUserPayload)[]).forEach((field) => {
       if (!form[field].trim()) {
         nextErrors[field] = 'Dette felt er obligatorisk.';
       }
     });
 
+    // Tjekker om email har korrekt format
     if (form.email && !/^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(form.email)) {
       nextErrors.email = 'Indtast en gyldig email.';
     }
 
+    // Tjekker om fødselsdato har formatet YYYY-MM-DD
     if (form.birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(form.birthDate)) {
       nextErrors.birthDate = 'Brug formatet AAAA-MM-DD.';
     }
 
+    // Tjekker at password er mindst 8 tegn
     if (form.password && form.password.length < 8) {
-      nextErrors.password = 'Adgangskoden skal mindst vaere 8 tegn.';
+      nextErrors.password = 'Adgangskoden skal mindst være 8 tegn.';
     }
 
+    // Tjekker at password og gentaget password matcher
     if (form.password && form.confirmPassword && form.password !== form.confirmPassword) {
       nextErrors.confirmPassword = 'Adgangskoderne matcher ikke.';
     }
 
+    // Returnerer alle fejl
     return nextErrors;
   };
 
+  // Kører når brugeren trykker på knappen
   const handleSubmit = async () => {
     setGeneralError(null);
+
+    // Validerer formularen før API-kald
     const nextErrors = validateClientSide();
 
+    // Hvis der er fejl, vises de og funktionen stopper
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
       return;
     }
 
+    // Starter loading-state
     setIsSubmitting(true);
+
+    // Sender brugerdata til backend
     const { data, error } = await registerUser(form);
+
+    // Stopper loading-state
     setIsSubmitting(false);
 
+    // Hvis backend returnerer fejl, vises de
     if (error) {
       setFieldErrors(error.fieldErrors ?? {});
       setGeneralError(error.message);
+      Alert.alert('Kunne ikke oprette bruger', error.message);
       return;
     }
 
+    // Hvis brugeren oprettes korrekt, navigeres der videre til aktiveringssiden
     if (data) {
       router.push({
         pathname: '/activation-code',
         params: {
+          userId: String(data.userId),
           fullName: data.fullName,
           email: data.email,
         },
@@ -95,6 +135,7 @@ export default function RegisterScreen() {
     }
   };
 
+  // Funktion til tilbage-knappen
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
@@ -107,20 +148,22 @@ export default function RegisterScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
 
-          {/* 🔙 Back Button */}
+          {/* Tilbage-knap */}
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Text style={styles.backText}>← Tilbage</Text>
+            <Text style={styles.backText}>Tilbage</Text>
           </TouchableOpacity>
 
-          <View style={styles.header}>
-            <Text style={styles.kicker}>A1 Opret bruger</Text>
-            <Text style={styles.title}>Personlig info</Text>
-            <Text style={styles.description}>
-              Udfyld dine oplysninger for at komme videre til scanning af aktiveringskode.
-            </Text>
-          </View>
+          
 
+          {/* Formular-container */}
           <View style={styles.card}>
+
+            <Text style={styles.cardTitle}>Opret konto</Text>
+            <Text style={styles.cardDescription}>
+              Udfyld dine oplysninger for at fortsætte til aktivering.
+            </Text>
+
+            {/* Genbrugelige inputfelter */}
             <FormField
                 label="Fulde navn"
                 placeholder="Fx Anna Jensen"
@@ -128,6 +171,7 @@ export default function RegisterScreen() {
                 onChangeText={(value) => updateField('fullName', value)}
                 error={fieldErrors.fullName}
             />
+
             <FormField
                 label="Email"
                 placeholder="anna@eksempel.dk"
@@ -137,6 +181,7 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 error={fieldErrors.email}
             />
+
             <FormField
                 label="Telefonnummer"
                 placeholder="12345678"
@@ -145,13 +190,15 @@ export default function RegisterScreen() {
                 keyboardType="phone-pad"
                 error={fieldErrors.phoneNumber}
             />
+
             <FormField
-                label="Foedselsdato"
+                label="Fødselsdato"
                 placeholder="AAAA-MM-DD"
                 value={form.birthDate}
                 onChangeText={(value) => updateField('birthDate', value)}
                 error={fieldErrors.birthDate}
             />
+
             <FormField
                 label="Lejlighedsnummer"
                 placeholder="Fx 2A"
@@ -159,6 +206,7 @@ export default function RegisterScreen() {
                 onChangeText={(value) => updateField('apartmentNumber', value)}
                 error={fieldErrors.apartmentNumber}
             />
+
             <FormField
                 label="Adgangskode"
                 placeholder="Minimum 8 tegn"
@@ -167,8 +215,9 @@ export default function RegisterScreen() {
                 secureTextEntry
                 error={fieldErrors.password}
             />
+
             <FormField
-                label="Bekraeft adgangskode"
+                label="Bekræft adgangskode"
                 placeholder="Gentag adgangskoden"
                 value={form.confirmPassword}
                 onChangeText={(value) => updateField('confirmPassword', value)}
@@ -176,8 +225,13 @@ export default function RegisterScreen() {
                 error={fieldErrors.confirmPassword}
             />
 
+            {/* Viser generel fejlbesked */}
             {generalError ? <Text style={styles.generalError}>{generalError}</Text> : null}
 
+            {/* Debug-tekst, så man kan se hvilken backend appen kalder */}
+            <Text style={styles.debugText}>Backend: {API_BASE_URL}</Text>
+
+            {/* Submit-knap */}
             <TouchableOpacity
                 style={[styles.submitButton, isSubmitting ? styles.submitButtonDisabled : null]}
                 activeOpacity={0.9}
@@ -185,9 +239,10 @@ export default function RegisterScreen() {
                 disabled={isSubmitting}
             >
               {isSubmitting ? (
+                  // Viser spinner mens data sendes
                   <ActivityIndicator color="#ffffff" />
               ) : (
-                  <Text style={styles.submitButtonText}>Naeste: Scan aktiveringskode</Text>
+                  <Text style={styles.submitButtonText}>Næste: Scan aktiveringskode</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -196,17 +251,19 @@ export default function RegisterScreen() {
   );
 }
 
+// Type for props til FormField-komponenten
 type FormFieldProps = {
-  label: string;
-  placeholder: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  error?: string;
-  keyboardType?: 'default' | 'email-address' | 'phone-pad';
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  secureTextEntry?: boolean;
+  label: string; // Tekst over inputfeltet
+  placeholder: string; // Tekst inde i inputfeltet før brugeren skriver
+  value: string; // Værdien i inputfeltet
+  onChangeText: (value: string) => void; // Funktion der kaldes når brugeren skriver
+  error?: string; // Valgfri fejlbesked
+  keyboardType?: 'default' | 'email-address' | 'phone-pad'; // Type tastatur
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'; // Automatisk stort bogstav
+  secureTextEntry?: boolean; // Skjuler tekst, bruges til password
 };
 
+// Genbrugelig input-komponent
 function FormField({
                      label,
                      placeholder,
@@ -220,16 +277,19 @@ function FormField({
   return (
       <View style={styles.fieldWrapper}>
         <Text style={styles.fieldLabel}>{label}</Text>
+
         <TextInput
             style={[styles.input, error ? styles.inputError : null]}
             placeholder={placeholder}
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor="#8A8A8A"
             value={value}
             onChangeText={onChangeText}
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
             secureTextEntry={secureTextEntry}
         />
+
+        {/* Viser fejl under feltet, hvis der findes en fejl */}
         {error ? <Text style={styles.fieldError}>{error}</Text> : null}
       </View>
   );
@@ -238,100 +298,130 @@ function FormField({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f4f0e8',
+    backgroundColor: '#F5F7FA',
   },
+
   content: {
     paddingHorizontal: 20,
     paddingVertical: 24,
-    backgroundColor: '#f4f0e8',
+    backgroundColor: '#F5F7FA',
   },
 
   backButton: {
-    marginBottom: 10,
+    marginBottom: 18,
   },
+
   backText: {
     fontSize: 16,
-    color: '#1f4d3b',
-    fontWeight: '600',
+    color: '#3F7FC4',
+    fontWeight: '700',
   },
 
   header: {
-    marginBottom: 20,
+    alignItems: 'center',
+    marginBottom: 22,
   },
-  kicker: {
-    fontSize: 13,
+
+  appTitle: {
+    fontSize: 28,
     fontWeight: '700',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: '#9a6b39',
-    marginBottom: 10,
+    color: '#1F2937',
+    marginBottom: 6,
+    textAlign: 'center',
   },
-  title: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 8,
+
+  appSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 21,
+    textAlign: 'center',
+    maxWidth: 310,
   },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#4b5563',
-  },
+
   card: {
-    backgroundColor: '#fffdf8',
+    backgroundColor: '#FFFFFF',
     borderRadius: 28,
     padding: 20,
-    shadowColor: '#8d6e63',
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 12 },
+    shadowColor: '#3F7FC4',
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 5,
   },
+
+  cardTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 6,
+  },
+
+  cardDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+
   fieldWrapper: {
     marginBottom: 16,
   },
+
   fieldLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#374151',
-    marginBottom: 8,
+    marginBottom: 7,
   },
+
   input: {
     borderWidth: 1,
-    borderColor: '#d7cab7',
-    borderRadius: 16,
-    paddingHorizontal: 14,
+    borderColor: '#D1D5DB',
+    borderRadius: 30,
+    paddingHorizontal: 18,
     paddingVertical: 14,
     fontSize: 16,
     color: '#111827',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
   },
+
   inputError: {
-    borderColor: '#b42318',
+    borderColor: '#B42318',
   },
+
   fieldError: {
     marginTop: 6,
-    color: '#b42318',
+    color: '#B42318',
     fontSize: 13,
   },
+
   generalError: {
     marginBottom: 14,
-    color: '#b42318',
+    color: '#B42318',
     fontSize: 14,
     lineHeight: 20,
   },
+
+  debugText: {
+    marginBottom: 12,
+    color: '#6B7280',
+    fontSize: 12,
+  },
+
   submitButton: {
     marginTop: 8,
-    backgroundColor: '#1f4d3b',
-    borderRadius: 18,
+    backgroundColor: '#3F7FC4',
+    borderRadius: 30,
     paddingVertical: 16,
     alignItems: 'center',
   },
+
   submitButtonDisabled: {
     opacity: 0.7,
   },
+
   submitButtonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },

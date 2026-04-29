@@ -6,7 +6,29 @@ type ExtraConfig = {
 
 const extra = (Constants.expoConfig?.extra ?? {}) as ExtraConfig;
 
-export const API_BASE_URL = extra.apiBaseUrl ?? 'http://localhost:8080/api';
+export const API_BASE_URL = extra.apiBaseUrl ?? 'http://10.136.138.149:8080/api';
+const REQUEST_TIMEOUT_MS = 8000;
+
+async function fetchJson(path: string, options: RequestInit) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      signal: controller.signal,
+    });
+
+    const contentType = response.headers.get('content-type') ?? '';
+    const responseBody = contentType.includes('application/json')
+      ? await response.json()
+      : null;
+
+    return { response, responseBody };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 export type RegisterUserPayload = {
   fullName: string;
@@ -34,7 +56,7 @@ export async function registerUser(
   payload: RegisterUserPayload,
 ): Promise<{ data?: RegisterUserSuccess; error?: RegisterUserError }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/users/register`, {
+    const { response, responseBody } = await fetchJson('/users/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42,17 +64,64 @@ export async function registerUser(
       body: JSON.stringify(payload),
     });
 
-    const responseBody = await response.json();
-
     if (!response.ok) {
       return { error: responseBody as RegisterUserError };
     }
 
     return { data: responseBody as RegisterUserSuccess };
-  } catch {
+  } catch (error) {
+    const timedOut = error instanceof Error && error.name === 'AbortError';
     return {
       error: {
-        message: 'Forbindelsen til serveren fejlede. Kontroller backend og netvaerk.',
+        message: timedOut
+          ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend koerer paa ${API_BASE_URL}.`
+          : `Forbindelsen til serveren fejlede. Kontroller backend og netvaerk. Aktiv URL: ${API_BASE_URL}`,
+      },
+    };
+  }
+}
+
+export type ActivateUserPayload = {
+  userId: number;
+  code: string;
+};
+
+export type ActivateUserSuccess = {
+  userId: number;
+  code: string;
+  activated: boolean;
+  message: string;
+};
+
+export type ActivateUserError = {
+  message: string;
+  fieldErrors?: Partial<Record<keyof ActivateUserPayload, string>>;
+};
+
+export async function activateUser(
+  payload: ActivateUserPayload,
+): Promise<{ data?: ActivateUserSuccess; error?: ActivateUserError }> {
+  try {
+    const { response, responseBody } = await fetchJson('/activation-codes/activate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      return { error: responseBody as ActivateUserError };
+    }
+
+    return { data: responseBody as ActivateUserSuccess };
+  } catch (error) {
+    const timedOut = error instanceof Error && error.name === 'AbortError';
+    return {
+      error: {
+        message: timedOut
+          ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend koerer paa ${API_BASE_URL}.`
+          : `Forbindelsen til serveren fejlede. Kontroller backend og netvaerk. Aktiv URL: ${API_BASE_URL}`,
       },
     };
   }

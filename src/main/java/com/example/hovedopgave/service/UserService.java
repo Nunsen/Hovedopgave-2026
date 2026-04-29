@@ -42,6 +42,7 @@ public class UserService {
         user.setBirthDate(LocalDate.parse(request.birthDate().trim()));
         user.setApartmentNumber(request.apartmentNumber().trim());
         user.setPasswordHash(hashPassword(request.password()));
+        user.setIsActivated(false);
         user.setRole(DEFAULT_ROLE);
 
         User savedUser = userRepository.save(user);

@@ -48,6 +48,9 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "is_activated", nullable = false)
+    private Boolean isActivated = false;
+
     @Column(nullable = false)
     private String role;
 
