@@ -5,8 +5,34 @@ type ExtraConfig = {
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as ExtraConfig;
+const manifestHostUri =
+  (Constants.expoConfig as { hostUri?: string } | null)?.hostUri ??
+  ((Constants as unknown as {
+    expoGoConfig?: { debuggerHost?: string };
+    manifest2?: { extra?: { expoClient?: { hostUri?: string } } };
+  }).expoGoConfig?.debuggerHost ??
+    (Constants as unknown as {
+      expoGoConfig?: { debuggerHost?: string };
+      manifest2?: { extra?: { expoClient?: { hostUri?: string } } };
+    }).manifest2?.extra?.expoClient?.hostUri);
 
-export const API_BASE_URL = extra.apiBaseUrl ?? 'http://10.136.139.35:8080/api';
+function resolveApiBaseUrl() {
+  if (extra.apiBaseUrl) {
+    return extra.apiBaseUrl;
+  }
+
+  if (manifestHostUri) {
+    const host = manifestHostUri.split(':')[0];
+
+    if (host) {
+      return `http://${host}:8080/api`;
+    }
+  }
+
+  return 'http://127.0.0.1:8080/api';
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 const REQUEST_TIMEOUT_MS = 8000;
 
 async function fetchJson(path: string, options: RequestInit) {

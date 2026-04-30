@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { API_BASE_URL, loginUser, LoginUserPayload } from '@/lib/api';
+import { loginUser, LoginUserPayload } from '@/lib/api';
 
 type FieldErrors = Partial<Record<keyof LoginUserPayload, string>>;
 
