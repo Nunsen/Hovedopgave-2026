@@ -35,7 +35,7 @@ const initialForm: RegisterUserPayload = {
 };
 
 export default function RegisterScreen() {
-  const router = useRouter(); // Bruges til navigation
+  const router = useRouter();
 
   // State til alle formularfelter
   const [form, setForm] = useState<RegisterUserPayload>(initialForm);

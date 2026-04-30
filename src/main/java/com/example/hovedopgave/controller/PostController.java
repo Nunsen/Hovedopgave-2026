@@ -11,7 +11,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/posts")
 public class PostController {
-
     private final PostRepository postRepository;
 
     public PostController(PostRepository postRepository) {
@@ -20,6 +19,6 @@ public class PostController {
 
     @GetMapping
     public List<Post> getPosts() {
-        return postRepository.findAll();
+        return this.postRepository.findAll();
     }
 }

@@ -6,7 +6,7 @@ type ExtraConfig = {
 
 const extra = (Constants.expoConfig?.extra ?? {}) as ExtraConfig;
 
-export const API_BASE_URL = extra.apiBaseUrl ?? 'http://10.136.138.149:8080/api';
+export const API_BASE_URL = extra.apiBaseUrl ?? 'http://10.136.139.35:8080/api';
 const REQUEST_TIMEOUT_MS = 8000;
 
 async function fetchJson(path: string, options: RequestInit) {
@@ -39,6 +39,32 @@ export type RegisterUserPayload = {
   password: string;
   confirmPassword: string;
 };
+
+export type PostDto = {
+  postId: number;
+  title: string;
+  content: string;
+  category: string;
+  icon: string;
+  createdAt: string;
+  pinned: boolean;
+};
+
+export async function getPosts(): Promise<{ data?: PostDto[]; error?: string }> {
+  try {
+    const { response, responseBody } = await fetchJson('/posts', {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      return { error: 'Kunne ikke hente opslag.' };
+    }
+
+    return { data: responseBody as PostDto[] };
+  } catch {
+    return { error: 'Forbindelse til server fejlede.' };
+  }
+}
 
 export type LoginUserPayload = {
   email: string;

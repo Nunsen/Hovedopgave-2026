@@ -121,7 +121,7 @@ export default function LoginScreen() {
           <Text style={styles.forgot}>Glemt adgangskode?</Text>
         </TouchableOpacity>
         {generalError ? <Text style={styles.generalError}>{generalError}</Text> : null}
-        <Text style={styles.debugText}>Backend: {API_BASE_URL}</Text>
+
 
         <TouchableOpacity
           style={[styles.loginButton, isSubmitting ? styles.buttonDisabled : null]}
