@@ -1,8 +1,15 @@
 package com.example.hovedopgave.controller;
 
-import com.example.hovedopgave.model.Post;
-import com.example.hovedopgave.repository.PostRepository;
+import com.example.hovedopgave.dto.PostCreateRequest;
+import com.example.hovedopgave.dto.PostResponse;
+import com.example.hovedopgave.dto.ValidationErrorResponse;
+import com.example.hovedopgave.service.PostService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,14 +18,28 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/posts")
 public class PostController {
-    private final PostRepository postRepository;
+    private final PostService postService;
 
-    public PostController(PostRepository postRepository) {
-        this.postRepository = postRepository;
+    public PostController(PostService postService) {
+        this.postService = postService;
     }
 
     @GetMapping
-    public List<Post> getPosts() {
-        return this.postRepository.findAll();
+    public List<PostResponse> getPosts() {
+        return postService.getPosts();
+    }
+
+    @PostMapping
+    public ResponseEntity<PostResponse> createPost(@RequestBody PostCreateRequest request) {
+        PostResponse response = postService.createPost(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @ExceptionHandler(PostService.PostValidationException.class)
+    public ResponseEntity<ValidationErrorResponse> handleValidationException(
+            PostService.PostValidationException exception
+    ) {
+        ValidationErrorResponse response = new ValidationErrorResponse(exception.getMessage(), exception.getFieldErrors());
+        return ResponseEntity.badRequest().body(response);
     }
 }

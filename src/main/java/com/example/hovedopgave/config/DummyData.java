@@ -11,6 +11,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -53,6 +54,7 @@ public class DummyData {
                         "Vigtig info",
                         "bullhorn-outline",
                         true,
+                        null,
                         LocalDateTime.now().minusDays(1)
                 ));
 
@@ -62,6 +64,7 @@ public class DummyData {
                         "Begivenhed",
                         "calendar-blank-outline",
                         false,
+                        LocalDate.now().plusDays(14),
                         LocalDateTime.now().minusDays(2)
                 ));
 
@@ -71,6 +74,7 @@ public class DummyData {
                         "Generelt",
                         "package-variant-closed",
                         false,
+                        null,
                         LocalDateTime.now().minusDays(3)
                 ));
 
@@ -80,6 +84,7 @@ public class DummyData {
                         "Generelt",
                         "broom",
                         false,
+                        null,
                         LocalDateTime.now().minusDays(5)
                 ));
 
@@ -89,13 +94,23 @@ public class DummyData {
                         "Vigtig info",
                         "wrench-outline",
                         true,
+                        null,
                         LocalDateTime.now().minusDays(6)
                 ));
             }
         };
     }
 
-    private Post createPost(User user, String title, String content, String category, String icon, boolean pinned, LocalDateTime createdAt) {
+    private Post createPost(
+            User user,
+            String title,
+            String content,
+            String category,
+            String icon,
+            boolean pinned,
+            LocalDate eventDate,
+            LocalDateTime createdAt
+    ) {
         Post post = new Post();
         post.setUser(user);
         post.setTitle(title);
@@ -103,6 +118,7 @@ public class DummyData {
         post.setCategory(category);
         post.setIcon(icon);
         post.setIsImportant(pinned);
+        post.setEventDate(eventDate);
         post.setCreatedAt(createdAt);
         return post;
     }

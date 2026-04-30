@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 
 // Importerer typen for brugerdata og funktionen til at oprette bruger
+import { useAuth } from '@/context/AuthContext';
 import { RegisterUserPayload, registerUser } from '@/lib/api';
 
 // Type til fejlbeskeder på de enkelte felter
@@ -36,6 +37,7 @@ const initialForm: RegisterUserPayload = {
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { setPendingActivationUser } = useAuth();
 
   // State til alle formularfelter
   const [form, setForm] = useState<RegisterUserPayload>(initialForm);
@@ -124,14 +126,12 @@ export default function RegisterScreen() {
 
     // Hvis brugeren oprettes korrekt, navigeres der videre til aktiveringssiden
     if (data) {
-      router.push({
-        pathname: '/activation-code',
-        params: {
-          userId: String(data.userId),
-          fullName: data.fullName,
-          email: data.email,
-        },
+      await setPendingActivationUser({
+        userId: data.userId,
+        fullName: data.fullName,
+        email: data.email,
       });
+      router.push('/activation-code');
     }
   };
 

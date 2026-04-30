@@ -1,8 +1,22 @@
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminScreen() {
     const router = useRouter();
+    const { isLoading, logout, user } = useAuth();
+
+    useEffect(() => {
+        if (!isLoading && !user) {
+            router.replace('/login');
+        }
+    }, [isLoading, router, user]);
+
+    if (!user) {
+        return null;
+    }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -19,7 +33,10 @@ export default function AdminScreen() {
 
                 <TouchableOpacity
                     style={styles.logoutButton}
-                    onPress={() => router.replace('/login')}
+                    onPress={async () => {
+                        await logout();
+                        router.replace('/login');
+                    }}
                 >
                     <Text style={styles.logoutText}>Log ud</Text>
                 </TouchableOpacity>

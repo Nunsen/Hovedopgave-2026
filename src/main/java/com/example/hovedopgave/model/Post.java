@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,9 @@ public class Post {
 
     @Column(nullable = false)
     private String icon;
+
+    @Column(name = "event_date")
+    private LocalDate eventDate;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

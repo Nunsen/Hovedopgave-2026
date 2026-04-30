@@ -13,12 +13,14 @@ import {
   View,
 } from 'react-native';
 
+import { useAuth } from '@/context/AuthContext';
 import { loginUser, LoginUserPayload } from '@/lib/api';
 
 type FieldErrors = Partial<Record<keyof LoginUserPayload, string>>;
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login, user } = useAuth();
   const [form, setForm] = useState<LoginUserPayload>({ email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -73,13 +75,24 @@ export default function LoginScreen() {
     }
 
     if (result.data) {
-      //Alert.alert(
-      //    'Login debug',
-      //    `Email: ${result.data.email}\nRole: ${result.data.role ?? 'UNDEFINED'}`
-      //);
+      await login(result.data);
       const nextRoute = result.data.role === 'ADMIN' ? '/admin' : '/home';
       router.replace(nextRoute);
     }
+  };
+
+  const handleTestHome = async () => {
+    if (!user) {
+      await login({
+        userId: 1,
+        fullName: 'Demo Beboer',
+        email: 'demo@soranerneshus.dk',
+        role: 'RESIDENT',
+        message: 'Demo login',
+      });
+    }
+
+    router.replace('/home');
   };
 
   return (
@@ -122,7 +135,6 @@ export default function LoginScreen() {
         </TouchableOpacity>
         {generalError ? <Text style={styles.generalError}>{generalError}</Text> : null}
 
-
         <TouchableOpacity
           style={[styles.loginButton, isSubmitting ? styles.buttonDisabled : null]}
           activeOpacity={0.8}
@@ -147,9 +159,11 @@ export default function LoginScreen() {
         <TouchableOpacity
           style={styles.testButton}
           activeOpacity={0.8}
-          onPress={() => router.push('/home')}
+          onPress={handleTestHome}
         >
-          <Text style={styles.testButtonText}>Test forside</Text>
+          <Text style={styles.testButtonText}>
+            {user ? 'Gaa til forside' : 'Test forside'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

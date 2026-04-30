@@ -68,12 +68,29 @@ export type RegisterUserPayload = {
 
 export type PostDto = {
   postId: number;
+  userId: number | null;
   title: string;
   content: string;
   category: string;
   icon: string;
+  eventDate: string | null;
   createdAt: string;
   pinned: boolean;
+};
+
+export type CreatePostPayload = {
+  userId: number;
+  title: string;
+  eventDate: string;
+  category: 'Begivenhed' | 'Generelt' | 'Vigtig info';
+  content: string;
+  icon: string;
+  pinned: boolean;
+};
+
+export type CreatePostError = {
+  message: string;
+  fieldErrors?: Partial<Record<keyof CreatePostPayload, string>>;
 };
 
 export async function getPosts(): Promise<{ data?: PostDto[]; error?: string }> {
@@ -89,6 +106,35 @@ export async function getPosts(): Promise<{ data?: PostDto[]; error?: string }> 
     return { data: responseBody as PostDto[] };
   } catch {
     return { error: 'Forbindelse til server fejlede.' };
+  }
+}
+
+export async function createPost(
+  payload: CreatePostPayload,
+): Promise<{ data?: PostDto; error?: CreatePostError }> {
+  try {
+    const { response, responseBody } = await fetchJson('/posts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      return { error: responseBody as CreatePostError };
+    }
+
+    return { data: responseBody as PostDto };
+  } catch (error) {
+    const timedOut = error instanceof Error && error.name === 'AbortError';
+    return {
+      error: {
+        message: timedOut
+          ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend koerer paa ${API_BASE_URL}.`
+          : `Forbindelsen til serveren fejlede. Kontroller backend og netvaerk. Aktiv URL: ${API_BASE_URL}`,
+      },
+    };
   }
 }
 

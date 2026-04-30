@@ -1,166 +1,299 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
+import { useAuth } from '@/context/AuthContext';
 import { getPosts, PostDto } from '@/lib/api';
 
-const filterChips = ['Alle', 'Generelt', 'Begivenheder', 'Vigtig info'];
+const filterChips = ['Alle', 'Generelt', 'Begivenheder', 'Vigtig info'] as const;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { logout, user, isLoading } = useAuth();
 
   const [posts, setPosts] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<(typeof filterChips)[number]>('Alle');
+  const [searchText, setSearchText] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    const loadPosts = async () => {
-      const result = await getPosts();
+    if (!isLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isLoading, router, user]);
 
-      if (result.error) {
-        Alert.alert('Kunne ikke hente opslag', result.error);
-        setLoading(false);
-        return;
-      }
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
 
-      setPosts(result.data ?? []);
+    const result = await getPosts();
+
+    if (result.error) {
+      Alert.alert('Kunne ikke hente opslag', result.error);
       setLoading(false);
-    };
+      return;
+    }
 
-    loadPosts();
+    setPosts(result.data ?? []);
+    setLoading(false);
   }, []);
 
-  const sortedPosts = useMemo(() => {
-    return [...posts].sort((a, b) => {
+  useFocusEffect(
+      useCallback(() => {
+        loadPosts();
+      }, [loadPosts]),
+  );
+
+  const filteredPosts = useMemo(() => {
+    const sortedPosts = [...posts].sort((a, b) => {
       if (a.pinned !== b.pinned) {
         return Number(b.pinned) - Number(a.pinned);
       }
 
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [posts]);
+
+    const mappedCategory = activeFilter === 'Begivenheder' ? 'Begivenhed' : activeFilter;
+    const searchValue = searchText.toLowerCase().trim();
+
+    return sortedPosts.filter((post) => {
+      const matchesFilter = activeFilter === 'Alle' || post.category === mappedCategory;
+
+      const matchesSearch =
+          searchValue.length === 0 ||
+          post.title?.toLowerCase().includes(searchValue) ||
+          post.content?.toLowerCase().includes(searchValue) ||
+          post.category?.toLowerCase().includes(searchValue);
+
+      return matchesFilter && matchesSearch;
+    });
+  }, [activeFilter, posts, searchText]);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const handleLogout = async () => {
+    setIsSidebarOpen(false);
+    await logout();
+    router.replace('/login');
+  };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Pressable style={styles.iconButton}>
-              <Feather name="menu" size={22} color="#1F2937" />
-            </Pressable>
-            <Image
-              source={require('@/assets/images/logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
-
-          <Text style={styles.headerTitle}>Opslagstavlen</Text>
-
-          <Pressable style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={22} color="#1F2937" />
-          </Pressable>
-        </View>
-
-        <View style={styles.searchRow}>
-          <View style={styles.searchField}>
-            <Feather name="search" size={18} color="#9CA3AF" />
-            <Text style={styles.searchPlaceholder}>Sog i opslag...</Text>
-          </View>
-
-          <Pressable style={styles.filterButton}>
-            <Feather name="filter" size={16} color="#374151" />
-            <Text style={styles.filterText}>Filter</Text>
-          </Pressable>
-        </View>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipRow}
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <Modal
+              transparent
+              visible={isSidebarOpen}
+              animationType="fade"
+              onRequestClose={() => setIsSidebarOpen(false)}
           >
-            {filterChips.map((chip, index) => (
-              <Pressable
-                key={chip}
-                style={[styles.chip, index === 0 ? styles.chipActive : null]}
-              >
-                <Text style={[styles.chipText, index === 0 ? styles.chipTextActive : null]}>
-                  {chip}
-                </Text>
+            <View style={styles.sidebarOverlay}>
+              <Pressable style={styles.sidebarBackdrop} onPress={() => setIsSidebarOpen(false)} />
+
+              <View style={styles.sidebarPanel}>
+                <View>
+                  <View style={styles.sidebarHeader}>
+                    <Text style={styles.sidebarTitle}>Menu</Text>
+                    <Pressable
+                        style={styles.sidebarCloseButton}
+                        onPress={() => setIsSidebarOpen(false)}
+                    >
+                      <Ionicons name="close" size={22} color="#111827" />
+                    </Pressable>
+                  </View>
+
+                  <View style={styles.sidebarUserCard}>
+                    <Text style={styles.sidebarUserName}>{user.fullName}</Text>
+                    <Text style={styles.sidebarUserMeta}>{user.email}</Text>
+                    <Text style={styles.sidebarUserMeta}>{user.role}</Text>
+                  </View>
+
+                  <Pressable
+                      style={styles.sidebarLink}
+                      onPress={() => {
+                        setIsSidebarOpen(false);
+                        router.replace('/home');
+                      }}
+                  >
+                    <Ionicons name="home-outline" size={20} color="#111827" />
+                    <Text style={styles.sidebarLinkText}>Forside</Text>
+                  </Pressable>
+
+                  <Pressable
+                      style={styles.sidebarLink}
+                      onPress={() => {
+                        setIsSidebarOpen(false);
+                        router.push('/new-post');
+                      }}
+                  >
+                    <Ionicons name="add-circle-outline" size={20} color="#111827" />
+                    <Text style={styles.sidebarLinkText}>Nyt opslag</Text>
+                  </Pressable>
+
+                  <Pressable
+                      style={styles.sidebarLink}
+                      onPress={() => {
+                        setIsSidebarOpen(false);
+                        router.push('/profile');
+                      }}
+                  >
+                    <Ionicons name="person-outline" size={20} color="#111827" />
+                    <Text style={styles.sidebarLinkText}>Profil</Text>
+                  </Pressable>
+                </View>
+
+                <Pressable style={styles.logoutButton} onPress={handleLogout}>
+                  <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.logoutButtonText}>Log ud</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
+
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Pressable style={styles.iconButton} onPress={() => setIsSidebarOpen(true)}>
+                <Feather name="menu" size={22} color="#1F2937" />
               </Pressable>
-            ))}
+
+
+            </View>
+
+            <Text style={styles.headerTitle}>Opslagstavlen</Text>
+
+            <Pressable style={styles.iconButton}>
+              <Ionicons name="notifications-outline" size={22} color="#1F2937" />
+            </Pressable>
+          </View>
+
+          <View style={styles.searchFilterBox}>
+            <View style={styles.searchField}>
+              <Feather name="search" size={18} color="#9CA3AF" />
+
+              <TextInput
+                  style={styles.searchInput}
+                  placeholder="Søg i opslag..."
+                  placeholderTextColor="#9CA3AF"
+                  value={searchText}
+                  onChangeText={setSearchText}
+              />
+            </View>
+
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipRowInside}
+            >
+              {filterChips.map((chip) => (
+                  <Pressable
+                      key={chip}
+                      style={[styles.chip, activeFilter === chip ? styles.chipActive : null]}
+                      onPress={() => setActiveFilter(chip)}
+                  >
+                    <Text style={[styles.chipText, activeFilter === chip ? styles.chipTextActive : null]}>
+                      {chip}
+                    </Text>
+                  </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+
+          <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+          >
+            {loading ? (
+                <Text style={styles.statusText}>Indlæser opslag...</Text>
+            ) : filteredPosts.length === 0 ? (
+                <Text style={styles.statusText}>Ingen opslag matcher din søgning.</Text>
+            ) : (
+                filteredPosts.map((post) => {
+                  const date = post.createdAt
+                      ? new Date(post.createdAt).toLocaleDateString('da-DK')
+                      : '';
+
+                  const iconName = post.icon?.trim() ? post.icon : 'bullhorn-outline';
+                  const category = post.category?.trim() ? post.category : 'Generelt';
+
+                  return (
+                      <View key={post.postId} style={styles.postCard}>
+                        <View style={styles.postIcon}>
+                          <MaterialCommunityIcons
+                              name={iconName as keyof typeof MaterialCommunityIcons.glyphMap}
+                              size={28}
+                              color="#4B5563"
+                          />
+                        </View>
+
+                        <View style={styles.postContent}>
+                          <View style={styles.postMetaRow}>
+                            <Text style={styles.postCategory}>{category}</Text>
+                            <Text style={styles.postDate}>{date}</Text>
+                          </View>
+
+                          <Text style={styles.postTitle}>{post.title}</Text>
+                          <Text style={styles.postBody}>{post.content}</Text>
+                        </View>
+
+                        {post.pinned ? (
+                            <MaterialCommunityIcons
+                                name="pin-outline"
+                                size={18}
+                                color="#6B7280"
+                                style={styles.pinIcon}
+                            />
+                        ) : null}
+                      </View>
+                  );
+                })
+            )}
           </ScrollView>
 
-          {loading ? (
-            <Text style={styles.statusText}>Indlaeser opslag...</Text>
-          ) : sortedPosts.length === 0 ? (
-            <Text style={styles.statusText}>Ingen opslag endnu.</Text>
-          ) : (
-            sortedPosts.map((post) => {
-              const date = post.createdAt
-                ? new Date(post.createdAt).toLocaleDateString('da-DK')
-                : '';
-              const iconName = post.icon?.trim() ? post.icon : 'bullhorn-outline';
-              const category = post.category?.trim() ? post.category : 'Generelt';
-
-              return (
-                <View key={post.postId} style={styles.postCard}>
-                  <View style={styles.postIcon}>
-                    <MaterialCommunityIcons
-                      name={iconName as keyof typeof MaterialCommunityIcons.glyphMap}
-                      size={28}
-                      color="#4B5563"
-                    />
-                  </View>
-
-                  <View style={styles.postContent}>
-                    <View style={styles.postMetaRow}>
-                      <Text style={styles.postCategory}>{category}</Text>
-                      <Text style={styles.postDate}>{date}</Text>
-                    </View>
-
-                    <Text style={styles.postTitle}>{post.title}</Text>
-                    <Text style={styles.postBody}>{post.content}</Text>
-                  </View>
-
-                  {post.pinned ? (
-                    <MaterialCommunityIcons
-                      name="pin-outline"
-                      size={18}
-                      color="#6B7280"
-                      style={styles.pinIcon}
-                    />
-                  ) : null}
-                </View>
-              );
-            })
-          )}
-        </ScrollView>
-
-        <Pressable style={styles.fab}>
-          <Ionicons name="add" size={26} color="#FFFFFF" />
-          <Text style={styles.fabText}>Nyt opslag</Text>
-        </Pressable>
-
-        <View style={styles.bottomBar}>
-          <Pressable style={styles.bottomItem}>
-            <Ionicons name="chatbubble-ellipses-outline" size={26} color="#111827" />
+          <Pressable
+              style={styles.fab}
+              onPress={() => router.push('/new-post')}
+          >
+            <Ionicons name="add" size={26} color="#FFFFFF" />
+            <Text style={styles.fabText}>Nyt opslag</Text>
           </Pressable>
 
-          <Pressable style={styles.bottomItem}>
-            <Ionicons name="home-outline" size={30} color="#111827" />
-          </Pressable>
+          <View style={styles.bottomBar}>
+            <Pressable style={styles.bottomItem}>
+              <Ionicons name="chatbubble-ellipses-outline" size={26} color="#111827" />
+            </Pressable>
 
-          <Pressable style={styles.bottomItem} onPress={() => router.push('/profile')}>
-            <Ionicons name="person" size={28} color="#9CA3AF" />
-          </Pressable>
+            <Pressable style={styles.bottomItem}>
+              <Ionicons name="home-outline" size={30} color="#111827" />
+            </Pressable>
+
+            <Pressable style={styles.bottomItem} onPress={() => router.push('/profile')}>
+              <Ionicons name="person" size={28} color="#9CA3AF" />
+            </Pressable>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
   );
 }
 
@@ -169,11 +302,103 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
     paddingTop: 10,
+  },
+  sidebarOverlay: {
+    flex: 1,
+    flexDirection: 'row-reverse',
+    backgroundColor: 'rgba(17, 24, 39, 0.28)',
+  },
+  sidebarBackdrop: {
+    flex: 1,
+  },
+  sidebarPanel: {
+    width: 278,
+    backgroundColor: '#FFFFFF',
+    paddingTop: 58,
+    paddingHorizontal: 18,
+    paddingBottom: 24,
+    justifyContent: 'space-between',
+    shadowColor: '#111827',
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 10,
+  },
+  sidebarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  sidebarTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  sidebarCloseButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sidebarUserCard: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    padding: 14,
+    backgroundColor: '#F9FAFB',
+    marginBottom: 18,
+  },
+  sidebarUserName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  sidebarUserMeta: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  sidebarLink: {
+    minHeight: 48,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  sidebarLinkText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  logoutButton: {
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: '#4B5563',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  logoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
   header: {
     flexDirection: 'row',
@@ -194,66 +419,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logo: {
-    width: 30,
-    height: 30,
-  },
+  
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#111827',
   },
-  searchRow: {
-    paddingTop: 14,
+  searchFilterBox: {
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
+    padding: 10,
   },
   searchField: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    height: 42,
+    borderRadius: 12,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: '#FFFFFF',
   },
-  searchPlaceholder: {
+  searchInput: {
+    flex: 1,
     fontSize: 15,
-    color: '#9CA3AF',
+    color: '#111827',
+    paddingVertical: 0,
   },
-  filterButton: {
-    alignSelf: 'flex-end',
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#9CA3AF',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-  },
-  filterText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  scrollContent: {
+  chipRowInside: {
     paddingTop: 10,
-    paddingBottom: 132,
-  },
-  chipRow: {
-    paddingBottom: 14,
     gap: 8,
   },
   chip: {
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 9,
   },
   chipActive: {
     backgroundColor: '#4B5563',
@@ -266,6 +471,10 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#FFFFFF',
+  },
+  scrollContent: {
+    paddingTop: 14,
+    paddingBottom: 132,
   },
   statusText: {
     paddingHorizontal: 8,
