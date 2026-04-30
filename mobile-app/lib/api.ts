@@ -76,6 +76,17 @@ export type PostDto = {
   eventDate: string | null;
   createdAt: string;
   pinned: boolean;
+  participantCount: number;
+  attending: boolean | null;
+  comments: CommentDto[];
+};
+
+export type CommentDto = {
+  commentId: number;
+  userId: number | null;
+  authorName: string;
+  content: string;
+  createdAt: string;
 };
 
 export type CreatePostPayload = {
@@ -93,6 +104,16 @@ export type CreatePostError = {
   fieldErrors?: Partial<Record<keyof CreatePostPayload, string>>;
 };
 
+export type UpdateParticipationPayload = {
+  userId: number;
+  attending: boolean;
+};
+
+export type CreateCommentPayload = {
+  userId: number;
+  content: string;
+};
+
 export async function getPosts(): Promise<{ data?: PostDto[]; error?: string }> {
   try {
     const { response, responseBody } = await fetchJson('/posts', {
@@ -104,6 +125,26 @@ export async function getPosts(): Promise<{ data?: PostDto[]; error?: string }> 
     }
 
     return { data: responseBody as PostDto[] };
+  } catch {
+    return { error: 'Forbindelse til server fejlede.' };
+  }
+}
+
+export async function getPost(
+  postId: number,
+  userId?: number,
+): Promise<{ data?: PostDto; error?: string }> {
+  try {
+    const query = userId ? `?userId=${userId}` : '';
+    const { response, responseBody } = await fetchJson(`/posts/${postId}${query}`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      return { error: 'Kunne ikke hente opslaget.' };
+    }
+
+    return { data: responseBody as PostDto };
   } catch {
     return { error: 'Forbindelse til server fejlede.' };
   }
@@ -135,6 +176,52 @@ export async function createPost(
           : `Forbindelsen til serveren fejlede. Kontroller backend og netvaerk. Aktiv URL: ${API_BASE_URL}`,
       },
     };
+  }
+}
+
+export async function updatePostParticipation(
+  postId: number,
+  payload: UpdateParticipationPayload,
+): Promise<{ data?: PostDto; error?: string }> {
+  try {
+    const { response, responseBody } = await fetchJson(`/posts/${postId}/participation`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      return { error: 'Kunne ikke opdatere deltagelse.' };
+    }
+
+    return { data: responseBody as PostDto };
+  } catch {
+    return { error: 'Forbindelse til server fejlede.' };
+  }
+}
+
+export async function createPostComment(
+  postId: number,
+  payload: CreateCommentPayload,
+): Promise<{ data?: PostDto; error?: string }> {
+  try {
+    const { response, responseBody } = await fetchJson(`/posts/${postId}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      return { error: 'Kunne ikke oprette kommentar.' };
+    }
+
+    return { data: responseBody as PostDto };
+  } catch {
+    return { error: 'Forbindelse til server fejlede.' };
   }
 }
 

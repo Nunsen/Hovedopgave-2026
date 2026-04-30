@@ -1,5 +1,7 @@
 package com.example.hovedopgave.dto;
 
+import java.util.List;
+
 public record PostResponse(
         Integer postId,
         Integer userId,
@@ -9,6 +11,9 @@ public record PostResponse(
         String icon,
         String eventDate,
         String createdAt,
-        boolean pinned
+        boolean pinned,
+        long participantCount,
+        Boolean attending,
+        List<CommentResponse> comments
 ) {
 }

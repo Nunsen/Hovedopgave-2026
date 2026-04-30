@@ -55,6 +55,10 @@ public class Post {
     @JsonIgnoreProperties({"post", "user"})
     private List<Comment> comments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "post")
+    @JsonIgnoreProperties({"post", "user"})
+    private List<PostParticipation> participations = new ArrayList<>();
+
     public Boolean getPinned() {
         return isImportant;
     }

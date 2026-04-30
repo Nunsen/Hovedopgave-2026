@@ -5,6 +5,7 @@ import com.example.hovedopgave.model.Post;
 import com.example.hovedopgave.model.User;
 import com.example.hovedopgave.repository.ActivationCodeRepository;
 import com.example.hovedopgave.repository.CommentRepository;
+import com.example.hovedopgave.repository.PostParticipationRepository;
 import com.example.hovedopgave.repository.PostRepository;
 import com.example.hovedopgave.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -23,7 +24,8 @@ public class DummyData {
             ActivationCodeRepository activationCodeRepository,
             UserRepository userRepository,
             PostRepository postRepository,
-            CommentRepository commentRepository
+            CommentRepository commentRepository,
+            PostParticipationRepository postParticipationRepository
     ) {
         return args -> {
 
@@ -44,6 +46,7 @@ public class DummyData {
             }
 
             commentRepository.deleteAll();
+            postParticipationRepository.deleteAll();
             postRepository.deleteAll();
 
             if (postRepository.count() == 0) {

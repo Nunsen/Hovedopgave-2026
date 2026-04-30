@@ -28,6 +28,9 @@ type IconOption = {
 type PostForm = {
   title: string;
   eventDate: string;
+  startTime: string;
+  endTime: string;
+  location: string;
   category: CategoryOption;
   content: string;
   icon: string;
@@ -49,6 +52,9 @@ const iconOptions: IconOption[] = [
 const initialForm: PostForm = {
   title: '',
   eventDate: '',
+  startTime: '',
+  endTime: '',
+  location: '',
   category: 'Generelt',
   content: '',
   icon: 'calendar-blank-outline',
@@ -91,6 +97,22 @@ export default function NewPostScreen() {
         nextErrors.eventDate = 'Dato for begivenhed er obligatorisk.';
       } else if (!/^\d{4}-\d{2}-\d{2}$/.test(form.eventDate)) {
         nextErrors.eventDate = 'Brug formatet AAAA-MM-DD.';
+      }
+
+      if (!form.startTime.trim()) {
+        nextErrors.startTime = 'Starttidspunkt er obligatorisk.';
+      } else if (!/^\d{2}:\d{2}$/.test(form.startTime)) {
+        nextErrors.startTime = 'Brug formatet TT:MM.';
+      }
+
+      if (!form.endTime.trim()) {
+        nextErrors.endTime = 'Sluttidspunkt er obligatorisk.';
+      } else if (!/^\d{2}:\d{2}$/.test(form.endTime)) {
+        nextErrors.endTime = 'Brug formatet TT:MM.';
+      }
+
+      if (!form.location.trim()) {
+        nextErrors.location = 'Lokation er obligatorisk.';
       }
     }
 
@@ -238,14 +260,45 @@ export default function NewPostScreen() {
               {fieldErrors.icon ? <Text style={styles.fieldError}>{fieldErrors.icon}</Text> : null}
 
               {form.category === 'Begivenhed' ? (
-                  <FormField
-                      label="Dato for begivenhed"
-                      placeholder="AAAA-MM-DD"
-                      value={form.eventDate}
-                      onChangeText={(value) => updateField('eventDate', value)}
-                      error={fieldErrors.eventDate}
-                      iconName="calendar-outline"
-                  />
+                  <>
+                    <FormField
+                        label="Dato for begivenhed"
+                        placeholder="AAAA-MM-DD"
+                        value={form.eventDate}
+                        onChangeText={(value) => updateField('eventDate', value)}
+                        error={fieldErrors.eventDate}
+                        iconName="calendar-outline"
+                    />
+
+                    <View style={styles.twoColumnRow}>
+                      <FormField
+                          label="Starttidspunkt"
+                          placeholder="TT:MM"
+                          value={form.startTime}
+                          onChangeText={(value) => updateField('startTime', value)}
+                          error={fieldErrors.startTime}
+                          iconName="time-outline"
+                      />
+
+                      <FormField
+                          label="Sluttidspunkt"
+                          placeholder="TT:MM"
+                          value={form.endTime}
+                          onChangeText={(value) => updateField('endTime', value)}
+                          error={fieldErrors.endTime}
+                          iconName="time-outline"
+                      />
+                    </View>
+
+                    <FormField
+                        label="Lokation"
+                        placeholder="Skriv lokation"
+                        value={form.location}
+                        onChangeText={(value) => updateField('location', value)}
+                        error={fieldErrors.location}
+                        iconName="location-outline"
+                    />
+                  </>
               ) : null}
 
               <View style={styles.summaryCard}>
@@ -470,6 +523,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginBottom: 6,
+  },
+  twoColumnRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
   segmentButton: {
     flex: 1,

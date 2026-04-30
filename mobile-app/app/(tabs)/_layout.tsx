@@ -13,6 +13,7 @@ export default function AuthLayout() {
       />
       <Stack.Screen name="home" options={{ headerShown: false }} />
       <Stack.Screen name="new-post" options={{ headerShown: false }} />
+      <Stack.Screen name="post/[postId]" options={{ headerShown: false }} />
     </Stack>
   );
 }

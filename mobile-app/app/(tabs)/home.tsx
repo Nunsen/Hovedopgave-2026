@@ -238,7 +238,16 @@ export default function HomeScreen() {
                   const category = post.category?.trim() ? post.category : 'Generelt';
 
                   return (
-                      <View key={post.postId} style={styles.postCard}>
+                      <Pressable
+                          key={post.postId}
+                          style={styles.postCard}
+                          onPress={() =>
+                              router.push({
+                                pathname: '/post/[postId]',
+                                params: { postId: String(post.postId) },
+                              })
+                          }
+                      >
                         <View style={styles.postIcon}>
                           <MaterialCommunityIcons
                               name={iconName as keyof typeof MaterialCommunityIcons.glyphMap}
@@ -255,6 +264,15 @@ export default function HomeScreen() {
 
                           <Text style={styles.postTitle}>{post.title}</Text>
                           <Text style={styles.postBody}>{post.content}</Text>
+
+                          {post.category === 'Begivenhed' ? (
+                              <View style={styles.participantRow}>
+                                <Ionicons name="people-outline" size={14} color="#6B7280" />
+                                <Text style={styles.participantText}>
+                                  {post.participantCount} deltagere
+                                </Text>
+                              </View>
+                          ) : null}
                         </View>
 
                         {post.pinned ? (
@@ -265,7 +283,7 @@ export default function HomeScreen() {
                                 style={styles.pinIcon}
                             />
                         ) : null}
-                      </View>
+                      </Pressable>
                   );
                 })
             )}
@@ -296,7 +314,6 @@ export default function HomeScreen() {
       </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -314,6 +331,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 10,
   },
+
   sidebarOverlay: {
     flex: 1,
     flexDirection: 'row-reverse',
@@ -354,10 +372,10 @@ const styles = StyleSheet.create({
   },
   sidebarUserCard: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 14,
+    borderColor: '#DBEAFE',
+    borderRadius: 16,
     padding: 14,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#EFF6FF',
     marginBottom: 18,
   },
   sidebarUserName: {
@@ -373,7 +391,7 @@ const styles = StyleSheet.create({
   },
   sidebarLink: {
     minHeight: 48,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -388,8 +406,8 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: '#4B5563',
+    borderRadius: 14,
+    backgroundColor: '#3F7FC4',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -400,6 +418,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -414,33 +433,40 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconButton: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#F9FAFB',
   },
-  
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#111827',
   },
+
   searchFilterBox: {
     marginTop: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 16,
-    backgroundColor: '#F9FAFB',
-    padding: 10,
+    borderRadius: 20,
+    backgroundColor: '#EFF6FF',
+    padding: 12,
+    shadowColor: '#1D4ED8',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   searchField: {
-    height: 42,
-    borderRadius: 12,
-    paddingHorizontal: 10,
+    height: 46,
+    borderRadius: 14,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
   searchInput: {
     flex: 1,
@@ -449,29 +475,30 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   chipRowInside: {
-    paddingTop: 10,
+    paddingTop: 12,
     gap: 8,
   },
   chip: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#BFDBFE',
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 9,
   },
   chipActive: {
-    backgroundColor: '#4B5563',
-    borderColor: '#4B5563',
+    backgroundColor: '#3F7FC4',
+    borderColor: '#3F7FC4',
   },
   chipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#3F7FC4',
   },
   chipTextActive: {
     color: '#FFFFFF',
   },
+
   scrollContent: {
     paddingTop: 14,
     paddingBottom: 132,
@@ -482,31 +509,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#6B7280',
   },
+
   postCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 14,
+    borderColor: '#E5E7EB',
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
-    padding: 12,
+    padding: 14,
     marginBottom: 12,
-    shadowColor: '#111827',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowColor: '#1F2937',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   postIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#EFF6FF',
   },
   postContent: {
     flex: 1,
@@ -521,8 +549,8 @@ const styles = StyleSheet.create({
   },
   postCategory: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: '700',
+    color: '#3F7FC4',
   },
   postDate: {
     fontSize: 12,
@@ -531,7 +559,7 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#111827',
     marginBottom: 4,
   },
@@ -540,23 +568,35 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     color: '#374151',
   },
+  participantRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  participantText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
   pinIcon: {
     marginTop: 4,
   },
+
   fab: {
     position: 'absolute',
     right: 16,
     bottom: 88,
-    backgroundColor: '#5B5B5B',
+    backgroundColor: '#3F7FC4',
     borderRadius: 24,
     paddingVertical: 10,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    shadowColor: '#000000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowColor: '#1D4ED8',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
@@ -565,6 +605,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+
   bottomBar: {
     position: 'absolute',
     left: 0,

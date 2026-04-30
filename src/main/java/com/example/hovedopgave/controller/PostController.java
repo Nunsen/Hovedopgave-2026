@@ -1,6 +1,8 @@
 package com.example.hovedopgave.controller;
 
+import com.example.hovedopgave.dto.CommentCreateRequest;
 import com.example.hovedopgave.dto.PostCreateRequest;
+import com.example.hovedopgave.dto.PostParticipationRequest;
 import com.example.hovedopgave.dto.PostResponse;
 import com.example.hovedopgave.dto.ValidationErrorResponse;
 import com.example.hovedopgave.service.PostService;
@@ -8,7 +10,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,10 +34,36 @@ public class PostController {
         return postService.getPosts();
     }
 
+    @GetMapping("/{postId}")
+    public PostResponse getPostById(
+            @PathVariable Integer postId,
+            @RequestParam(required = false) Integer userId
+    ) {
+        return postService.getPostById(postId, userId);
+    }
+
     @PostMapping
     public ResponseEntity<PostResponse> createPost(@RequestBody PostCreateRequest request) {
         PostResponse response = postService.createPost(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{postId}/comments")
+    public ResponseEntity<PostResponse> createComment(
+            @PathVariable Integer postId,
+            @RequestBody CommentCreateRequest request
+    ) {
+        PostResponse response = postService.createComment(postId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{postId}/participation")
+    public ResponseEntity<PostResponse> updateParticipation(
+            @PathVariable Integer postId,
+            @RequestBody PostParticipationRequest request
+    ) {
+        PostResponse response = postService.updateParticipation(postId, request);
+        return ResponseEntity.ok(response);
     }
 
     @ExceptionHandler(PostService.PostValidationException.class)
