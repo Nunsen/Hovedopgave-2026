@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +48,15 @@ public class Post {
 
     @Column(name = "event_date")
     private LocalDate eventDate;
+
+    @Column(name = "start_time")
+    private LocalTime startTime;
+
+    @Column(name = "end_time")
+    private LocalTime endTime;
+
+    @Column
+    private String location;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

@@ -449,13 +449,10 @@ const styles = StyleSheet.create({
   searchFilterBox: {
     marginTop: 14,
     borderRadius: 20,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F9FAFB', // mindre blå
     padding: 12,
-    shadowColor: '#1D4ED8',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB', // subtle border i stedet
   },
   searchField: {
     height: 46,
@@ -466,7 +463,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#E5E7EB',
   },
   searchInput: {
     flex: 1,

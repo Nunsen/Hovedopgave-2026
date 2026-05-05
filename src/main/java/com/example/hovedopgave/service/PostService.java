@@ -14,9 +14,11 @@ import com.example.hovedopgave.repository.PostParticipationRepository;
 import com.example.hovedopgave.repository.PostRepository;
 import com.example.hovedopgave.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,7 +64,7 @@ public class PostService {
     }
 
     public PostResponse createPost(PostCreateRequest request) {
-        Map<String, String> fieldErrors = validateCreateRequest(request);
+        Map<String, String> fieldErrors = validatePostRequest(request);
 
         if (!fieldErrors.isEmpty()) {
             throw new PostValidationException("Udfyld opslaget korrekt.", fieldErrors);
@@ -81,11 +83,62 @@ public class PostService {
         post.setCategory(request.category().trim());
         post.setIcon(request.icon().trim());
         post.setIsImportant(Boolean.TRUE.equals(request.pinned()));
-        post.setEventDate(parseEventDate(request.eventDate()));
+        applyPostValues(post, request);
         post.setCreatedAt(java.time.LocalDateTime.now());
 
         Post savedPost = postRepository.save(post);
         return toResponse(savedPost, user.getUserId());
+    }
+
+    public PostResponse updatePost(Integer postId, PostCreateRequest request) {
+        Map<String, String> fieldErrors = validatePostRequest(request);
+
+        if (!fieldErrors.isEmpty()) {
+            throw new PostValidationException("Udfyld opslaget korrekt.", fieldErrors);
+        }
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostValidationException(
+                        "Opslaget findes ikke.",
+                        Map.of("postId", "Der findes intet opslag med dette id.")
+                ));
+
+        if (request.userId() == null || post.getUser() == null || !request.userId().equals(post.getUser().getUserId())) {
+            throw new PostValidationException(
+                    "Du har ikke adgang til at redigere dette opslag.",
+                    Map.of("userId", "Kun forfatteren kan redigere opslaget.")
+            );
+        }
+
+        post.setTitle(request.title().trim());
+        post.setContent(request.content().trim());
+        post.setCategory(request.category().trim());
+        post.setIcon(request.icon().trim());
+        post.setIsImportant(Boolean.TRUE.equals(request.pinned()));
+        applyPostValues(post, request);
+
+        Post savedPost = postRepository.save(post);
+        return toResponse(savedPost, request.userId());
+    }
+
+    @Transactional
+    public void deletePost(Integer postId, Integer userId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostValidationException(
+                        "Opslaget findes ikke.",
+                        Map.of("postId", "Der findes intet opslag med dette id.")
+                ));
+
+        if (userId == null || post.getUser() == null || !userId.equals(post.getUser().getUserId())) {
+            throw new PostValidationException(
+                    "Du har ikke adgang til at slette dette opslag.",
+                    Map.of("userId", "Kun forfatteren kan slette opslaget.")
+            );
+        }
+
+        commentRepository.deleteAllByPostPostId(postId);
+        postParticipationRepository.deleteAllByPostPostId(postId);
+        postRepository.delete(post);
     }
 
     public PostResponse updateParticipation(Integer postId, PostParticipationRequest request) {
@@ -159,7 +212,7 @@ public class PostService {
         return toResponse(post, user.getUserId());
     }
 
-    private Map<String, String> validateCreateRequest(PostCreateRequest request) {
+    private Map<String, String> validatePostRequest(PostCreateRequest request) {
         Map<String, String> fieldErrors = new LinkedHashMap<>();
 
         if (request == null) {
@@ -176,6 +229,9 @@ public class PostService {
         String category = normalize(request.category());
         String icon = normalize(request.icon());
         String eventDate = normalize(request.eventDate());
+        String startTime = normalize(request.startTime());
+        String endTime = normalize(request.endTime());
+        String location = normalize(request.location());
 
         if (title == null) {
             fieldErrors.put("title", "Titel er obligatorisk.");
@@ -203,8 +259,32 @@ public class PostService {
             fieldErrors.put("eventDate", "Brug formatet AAAA-MM-DD.");
         }
 
+        if (startTime != null && !isValidTime(startTime)) {
+            fieldErrors.put("startTime", "Brug formatet TT:MM.");
+        }
+
+        if (endTime != null && !isValidTime(endTime)) {
+            fieldErrors.put("endTime", "Brug formatet TT:MM.");
+        }
+
         if ("Begivenhed".equals(category) && eventDate == null) {
             fieldErrors.put("eventDate", "Dato for begivenhed er obligatorisk for begivenheder.");
+        }
+
+        if ("Begivenhed".equals(category) && startTime == null) {
+            fieldErrors.put("startTime", "Starttidspunkt er obligatorisk for begivenheder.");
+        }
+
+        if ("Begivenhed".equals(category) && endTime == null) {
+            fieldErrors.put("endTime", "Sluttidspunkt er obligatorisk for begivenheder.");
+        }
+
+        if ("Begivenhed".equals(category) && location == null) {
+            fieldErrors.put("location", "Lokation er obligatorisk for begivenheder.");
+        }
+
+        if (location != null && location.length() > 150) {
+            fieldErrors.put("location", "Lokation maa hoejst vaere 150 tegn.");
         }
 
         if (request.pinned() == null) {
@@ -265,9 +345,32 @@ public class PostService {
         }
     }
 
+    private boolean isValidTime(String value) {
+        try {
+            LocalTime.parse(value);
+            return true;
+        } catch (DateTimeParseException exception) {
+            return false;
+        }
+    }
+
     private LocalDate parseEventDate(String eventDate) {
         String normalizedValue = normalize(eventDate);
         return normalizedValue == null ? null : LocalDate.parse(normalizedValue);
+    }
+
+    private LocalTime parseTime(String value) {
+        String normalizedValue = normalize(value);
+        return normalizedValue == null ? null : LocalTime.parse(normalizedValue);
+    }
+
+    private void applyPostValues(Post post, PostCreateRequest request) {
+        boolean isEvent = "Begivenhed".equals(request.category().trim());
+
+        post.setEventDate(isEvent ? parseEventDate(request.eventDate()) : null);
+        post.setStartTime(isEvent ? parseTime(request.startTime()) : null);
+        post.setEndTime(isEvent ? parseTime(request.endTime()) : null);
+        post.setLocation(isEvent ? normalize(request.location()) : null);
     }
 
     private PostResponse toResponse(Post post, Integer currentUserId) {
@@ -297,6 +400,9 @@ public class PostService {
                 post.getCategory(),
                 post.getIcon(),
                 post.getEventDate() != null ? post.getEventDate().toString() : null,
+                post.getStartTime() != null ? post.getStartTime().toString() : null,
+                post.getEndTime() != null ? post.getEndTime().toString() : null,
+                post.getLocation(),
                 post.getCreatedAt() != null ? post.getCreatedAt().toString() : null,
                 Boolean.TRUE.equals(post.getPinned()),
                 participantCount,

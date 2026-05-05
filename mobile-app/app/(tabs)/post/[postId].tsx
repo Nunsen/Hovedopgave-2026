@@ -1,6 +1,7 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,7 +15,7 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/context/AuthContext';
-import { createPostComment, getPost, PostDto, updatePostParticipation } from '@/lib/api';
+import { createPostComment, deletePost, getPost, PostDto, updatePostParticipation } from '@/lib/api';
 
 export default function PostDetailsScreen() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function PostDetailsScreen() {
     }
   }, [isLoading, router, user]);
 
-  useEffect(() => {
+  const loadPost = useCallback(async () => {
     const resolvedPostId = Number(postId);
 
     if (!user || Number.isNaN(resolvedPostId)) {
@@ -40,23 +41,25 @@ export default function PostDetailsScreen() {
       return;
     }
 
-    const loadPost = async () => {
-      setLoadingPost(true);
+    setLoadingPost(true);
 
-      const result = await getPost(resolvedPostId, user.userId);
+    const result = await getPost(resolvedPostId, user.userId);
 
-      if (result.error) {
-        Alert.alert('Kunne ikke hente opslag', result.error);
-        setLoadingPost(false);
-        return;
-      }
-
-      setPost(result.data ?? null);
+    if (result.error) {
+      Alert.alert('Kunne ikke hente opslag', result.error);
       setLoadingPost(false);
-    };
+      return;
+    }
 
-    loadPost();
+    setPost(result.data ?? null);
+    setLoadingPost(false);
   }, [postId, user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPost();
+    }, [loadPost]),
+  );
 
   const formattedCreatedAt = useMemo(() => {
     if (!post?.createdAt) {
@@ -73,6 +76,36 @@ export default function PostDetailsScreen() {
 
     return new Date(post.eventDate).toLocaleDateString('da-DK');
   }, [post?.eventDate]);
+
+  const canEditPost = Boolean(user && post && post.userId === user.userId);
+
+  const handleDeletePost = () => {
+    if (!user || !post) {
+      return;
+    }
+
+    Alert.alert(
+      'Slet opslag',
+      'Er du sikker paa, at du vil slette opslaget? Denne handling kan ikke fortrydes.',
+      [
+        { text: 'Annuller', style: 'cancel' },
+        {
+          text: 'Slet',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await deletePost(post.postId, user.userId);
+
+            if (result.error) {
+              Alert.alert('Kunne ikke slette opslag', result.error);
+              return;
+            }
+
+            router.replace('/home');
+          },
+        },
+      ],
+    );
+  };
 
   const handleParticipationToggle = async () => {
     if (!user || !post) {
@@ -153,7 +186,27 @@ export default function PostDetailsScreen() {
 
           <Text style={styles.headerTitle}>Opslag</Text>
 
-          <View style={styles.headerButton} />
+          {canEditPost ? (
+            <View style={styles.headerActions}>
+              <Pressable
+                style={styles.headerButton}
+                onPress={() =>
+                  router.push({
+                    pathname: '/edit-post/[postId]',
+                    params: { postId: String(post.postId) },
+                  })
+                }
+              >
+                <Feather name="edit-2" size={20} color="#111827" />
+              </Pressable>
+
+              <Pressable style={styles.headerButton} onPress={handleDeletePost}>
+                <Feather name="trash-2" size={20} color="#B42318" />
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.headerButton} />
+          )}
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -184,6 +237,18 @@ export default function PostDetailsScreen() {
                 <View style={styles.infoRow}>
                   <Ionicons name="calendar-outline" size={18} color="#3F7FC4" />
                   <Text style={styles.infoText}>Dato: {formattedEventDate || 'Ikke angivet'}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Ionicons name="time-outline" size={18} color="#3F7FC4" />
+                  <Text style={styles.infoText}>
+                    Tid: {post.startTime ?? 'Ikke angivet'} - {post.endTime ?? 'Ikke angivet'}
+                  </Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Ionicons name="location-outline" size={18} color="#3F7FC4" />
+                  <Text style={styles.infoText}>Lokation: {post.location ?? 'Ikke angivet'}</Text>
                 </View>
 
                 <View style={styles.infoRow}>
@@ -253,7 +318,7 @@ export default function PostDetailsScreen() {
                   ) : (
                     <>
                       <Ionicons name="send-outline" size={16} color="#FFFFFF" />
-                      <Text style={styles.commentSubmitButtonText}>Tilfoej kommentar</Text>
+                      <Text style={styles.commentSubmitButtonText}>Tilføj kommentar</Text>
                     </>
                   )}
                 </Pressable>
@@ -317,6 +382,11 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   headerTitle: {
     fontSize: 20,

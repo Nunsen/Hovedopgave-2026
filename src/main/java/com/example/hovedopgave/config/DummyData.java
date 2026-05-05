@@ -4,8 +4,6 @@ import com.example.hovedopgave.model.ActivationCode;
 import com.example.hovedopgave.model.Post;
 import com.example.hovedopgave.model.User;
 import com.example.hovedopgave.repository.ActivationCodeRepository;
-import com.example.hovedopgave.repository.CommentRepository;
-import com.example.hovedopgave.repository.PostParticipationRepository;
 import com.example.hovedopgave.repository.PostRepository;
 import com.example.hovedopgave.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -14,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Optional;
 
 @Configuration
@@ -23,9 +22,7 @@ public class DummyData {
     CommandLineRunner seedData(
             ActivationCodeRepository activationCodeRepository,
             UserRepository userRepository,
-            PostRepository postRepository,
-            CommentRepository commentRepository,
-            PostParticipationRepository postParticipationRepository
+            PostRepository postRepository
     ) {
         return args -> {
 
@@ -45,18 +42,16 @@ public class DummyData {
                 activationCodeRepository.save(activationCode);
             }
 
-            commentRepository.deleteAll();
-            postParticipationRepository.deleteAll();
-            postRepository.deleteAll();
-
             if (postRepository.count() == 0) {
-
                 postRepository.save(createPost(user,
                         "Vandafbrydelse i morgen",
                         "Der vil vare vandafbrydelse tirsdag d. 11/06 fra 08.00 til 14.00 pga. vedligeholdelse.",
                         "Vigtig info",
                         "bullhorn-outline",
                         true,
+                        null,
+                        null,
+                        null,
                         null,
                         LocalDateTime.now().minusDays(1)
                 ));
@@ -68,6 +63,9 @@ public class DummyData {
                         "calendar-blank-outline",
                         false,
                         LocalDate.now().plusDays(14),
+                        LocalTime.of(17, 0),
+                        LocalTime.of(22, 0),
+                        "Faellesgaarden",
                         LocalDateTime.now().minusDays(2)
                 ));
 
@@ -77,6 +75,9 @@ public class DummyData {
                         "Generelt",
                         "package-variant-closed",
                         false,
+                        null,
+                        null,
+                        null,
                         null,
                         LocalDateTime.now().minusDays(3)
                 ));
@@ -88,6 +89,9 @@ public class DummyData {
                         "broom",
                         false,
                         null,
+                        null,
+                        null,
+                        null,
                         LocalDateTime.now().minusDays(5)
                 ));
 
@@ -97,6 +101,9 @@ public class DummyData {
                         "Vigtig info",
                         "wrench-outline",
                         true,
+                        null,
+                        null,
+                        null,
                         null,
                         LocalDateTime.now().minusDays(6)
                 ));
@@ -112,6 +119,9 @@ public class DummyData {
             String icon,
             boolean pinned,
             LocalDate eventDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            String location,
             LocalDateTime createdAt
     ) {
         Post post = new Post();
@@ -122,6 +132,9 @@ public class DummyData {
         post.setIcon(icon);
         post.setIsImportant(pinned);
         post.setEventDate(eventDate);
+        post.setStartTime(startTime);
+        post.setEndTime(endTime);
+        post.setLocation(location);
         post.setCreatedAt(createdAt);
         return post;
     }
