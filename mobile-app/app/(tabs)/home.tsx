@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/context/AuthContext';
+import { BottomNav } from '@/components/navigation/bottom-nav';
 import { getPosts, PostDto } from '@/lib/api';
 
 const filterChips = ['Alle', 'Generelt', 'Begivenheder', 'Vigtig info'] as const;
@@ -162,6 +163,17 @@ export default function HomeScreen() {
                     <Ionicons name="person-outline" size={20} color="#111827" />
                     <Text style={styles.sidebarLinkText}>Profil</Text>
                   </Pressable>
+
+                  <Pressable
+                      style={styles.sidebarLink}
+                      onPress={() => {
+                        setIsSidebarOpen(false);
+                        router.push('/book-washing');
+                      }}
+                  >
+                    <MaterialCommunityIcons name="washing-machine" size={20} color="#111827" />
+                    <Text style={styles.sidebarLinkText}>Vaskeri</Text>
+                  </Pressable>
                 </View>
 
                 <Pressable style={styles.logoutButton} onPress={handleLogout}>
@@ -297,19 +309,12 @@ export default function HomeScreen() {
             <Text style={styles.fabText}>Nyt opslag</Text>
           </Pressable>
 
-          <View style={styles.bottomBar}>
-            <Pressable style={styles.bottomItem}>
-              <Ionicons name="chatbubble-ellipses-outline" size={26} color="#111827" />
-            </Pressable>
-
-            <Pressable style={styles.bottomItem}>
-              <Ionicons name="home-outline" size={30} color="#111827" />
-            </Pressable>
-
-            <Pressable style={styles.bottomItem} onPress={() => router.push('/profile')}>
-              <Ionicons name="person" size={28} color="#9CA3AF" />
-            </Pressable>
-          </View>
+          <BottomNav
+              active="home"
+              onHomePress={() => router.replace('/home')}
+              onWashingPress={() => router.push('/book-washing')}
+              onProfilePress={() => router.push('/profile')}
+          />
         </View>
       </SafeAreaView>
   );
@@ -603,23 +608,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 72,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingBottom: 8,
-  },
-  bottomItem: {
-    width: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

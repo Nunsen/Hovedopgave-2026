@@ -12,6 +12,8 @@ export default function AuthLayout() {
         options={{ title: 'Aktiveringskode', headerBackTitle: 'Tilbage' }}
       />
       <Stack.Screen name="home" options={{ headerShown: false }} />
+      <Stack.Screen name="book-washing" options={{ headerShown: false }} />
+      <Stack.Screen name="my-bookings" options={{ headerShown: false }} />
       <Stack.Screen name="new-post" options={{ headerShown: false }} />
       <Stack.Screen name="post/[postId]" options={{ headerShown: false }} />
     </Stack>

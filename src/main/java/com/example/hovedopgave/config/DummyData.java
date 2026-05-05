@@ -1,9 +1,13 @@
 package com.example.hovedopgave.config;
 
 import com.example.hovedopgave.model.ActivationCode;
+import com.example.hovedopgave.model.Booking;
+import com.example.hovedopgave.model.Facility;
 import com.example.hovedopgave.model.Post;
 import com.example.hovedopgave.model.User;
 import com.example.hovedopgave.repository.ActivationCodeRepository;
+import com.example.hovedopgave.repository.BookingRepository;
+import com.example.hovedopgave.repository.FacilityRepository;
 import com.example.hovedopgave.repository.PostRepository;
 import com.example.hovedopgave.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -13,7 +17,10 @@ import org.springframework.context.annotation.Configuration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Configuration
 public class DummyData {
@@ -22,7 +29,9 @@ public class DummyData {
     CommandLineRunner seedData(
             ActivationCodeRepository activationCodeRepository,
             UserRepository userRepository,
-            PostRepository postRepository
+            PostRepository postRepository,
+            FacilityRepository facilityRepository,
+            BookingRepository bookingRepository
     ) {
         return args -> {
 
@@ -83,8 +92,8 @@ public class DummyData {
                 ));
 
                 postRepository.save(createPost(user,
-                        "Rengoering af faellesomraader",
-                        "Husk at hjaelpe med at holde vores faellesomraader rene og paene.",
+                        "Rengøring af fællesomraader",
+                        "Husk at hjælpe med at holde vores fællesområder rene og pæne.",
                         "Generelt",
                         "broom",
                         false,
@@ -108,7 +117,89 @@ public class DummyData {
                         LocalDateTime.now().minusDays(6)
                 ));
             }
+
+            normalizeFacilities(facilityRepository, bookingRepository);
         };
+    }
+
+    private void normalizeFacilities(
+            FacilityRepository facilityRepository,
+            BookingRepository bookingRepository
+    ) {
+        List<Facility> existingFacilities = facilityRepository.findAll();
+
+        Facility laundryFacility = existingFacilities.stream()
+                .filter(facility -> matchesFacility(facility, Set.of("laundry", "vaskeri", "laundry room 1"), Set.of("WASHING_ROOM", "LAUNDRY")))
+                .findFirst()
+                .orElseGet(Facility::new);
+        boolean clearLegacyLaundryBookings = isLegacyLaundryFacility(laundryFacility);
+
+        laundryFacility.setName("laundry");
+        laundryFacility.setType("WASHING_ROOM");
+        laundryFacility.setStatus("ACTIVE");
+        laundryFacility = facilityRepository.save(laundryFacility);
+        Integer laundryFacilityId = laundryFacility.getFacilityId();
+
+        if (clearLegacyLaundryBookings && laundryFacilityId != null) {
+            bookingRepository.deleteAllByFacilityFacilityId(laundryFacilityId);
+        }
+
+        Facility partyFacility = existingFacilities.stream()
+                .filter(facility -> matchesFacility(facility, Set.of("festsal"), Set.of("PARTY_ROOM", "FESTSAL")))
+                .findFirst()
+                .orElseGet(Facility::new);
+
+        partyFacility.setName("festsal");
+        partyFacility.setType("PARTY_ROOM");
+        partyFacility.setStatus("ACTIVE");
+        partyFacility = facilityRepository.save(partyFacility);
+
+        Set<Integer> allowedFacilityIds = Set.of(
+                laundryFacility.getFacilityId(),
+                partyFacility.getFacilityId()
+        );
+
+        List<Booking> legacyBookings = bookingRepository.findAll().stream()
+                .filter(booking -> booking.getFacility() == null
+                        || booking.getFacility().getFacilityId() == null
+                        || !allowedFacilityIds.contains(booking.getFacility().getFacilityId()))
+                .toList();
+
+        if (!legacyBookings.isEmpty()) {
+            bookingRepository.deleteAll(legacyBookings);
+        }
+
+        List<Booking> invalidLaundryBookings = bookingRepository.findAll().stream()
+                .filter(booking -> booking.getFacility() != null
+                        && laundryFacilityId != null
+                        && laundryFacilityId.equals(booking.getFacility().getFacilityId())
+                        && booking.getStartTime() != null
+                        && booking.getEndTime() != null
+                        && !booking.getStartTime().plusHours(1).equals(booking.getEndTime()))
+                .toList();
+
+        if (!invalidLaundryBookings.isEmpty()) {
+            bookingRepository.deleteAll(invalidLaundryBookings);
+        }
+
+        List<Facility> legacyFacilities = facilityRepository.findAll().stream()
+                .filter(facility -> facility.getFacilityId() != null && !allowedFacilityIds.contains(facility.getFacilityId()))
+                .collect(Collectors.toList());
+
+        if (!legacyFacilities.isEmpty()) {
+            facilityRepository.deleteAll(legacyFacilities);
+        }
+    }
+
+    private boolean matchesFacility(Facility facility, Set<String> names, Set<String> types) {
+        String facilityName = facility.getName() == null ? "" : facility.getName().trim().toLowerCase();
+        String facilityType = facility.getType() == null ? "" : facility.getType().trim().toUpperCase();
+        return names.contains(facilityName) || types.contains(facilityType);
+    }
+
+    private boolean isLegacyLaundryFacility(Facility facility) {
+        String facilityName = facility.getName() == null ? "" : facility.getName().trim().toLowerCase();
+        return "laundry room 1".equals(facilityName) || "vaskeri".equals(facilityName);
     }
 
     private Post createPost(

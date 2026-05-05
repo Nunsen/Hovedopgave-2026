@@ -120,6 +120,45 @@ export type CreateCommentPayload = {
     content: string;
 };
 
+export type BookingDto = {
+    bookingId: number;
+    userId: number | null;
+    facilityId: number | null;
+    facilityName: string | null;
+    date: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    status: string | null;
+    createdAt: string | null;
+};
+
+export type BookingSlotDto = {
+    startTime: string;
+    endTime: string;
+    available: boolean;
+    bookingId: number | null;
+};
+
+export type BookingAvailabilityDto = {
+    date: string;
+    facilityId: number;
+    facilityName: string;
+    slots: BookingSlotDto[];
+};
+
+export type CreateBookingPayload = {
+    userId: number;
+    facilityId: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+};
+
+export type CreateBookingError = {
+    message: string;
+    fieldErrors?: Partial<Record<keyof CreateBookingPayload, string>>;
+};
+
 export async function getPosts(): Promise<{ data?: PostDto[]; error?: string }> {
     try {
         const {response, responseBody} = await fetchJson('/posts', {
@@ -277,6 +316,72 @@ export async function createPostComment(
         return {data: responseBody as PostDto};
     } catch {
         return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function getBookings(
+    userId?: number,
+): Promise<{ data?: BookingDto[]; error?: string }> {
+    try {
+        const query = userId ? `?userId=${userId}` : '';
+        const {response, responseBody} = await fetchJson(`/bookings${query}`, {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke hente bookinger.'};
+        }
+
+        return {data: responseBody as BookingDto[]};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function getBookingAvailability(
+    date: string,
+): Promise<{ data?: BookingAvailabilityDto; error?: string }> {
+    try {
+        const {response, responseBody} = await fetchJson(`/bookings/availability?date=${date}`, {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke hente ledige tider.'};
+        }
+
+        return {data: responseBody as BookingAvailabilityDto};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function createBooking(
+    payload: CreateBookingPayload,
+): Promise<{ data?: BookingDto; error?: CreateBookingError }> {
+    try {
+        const {response, responseBody} = await fetchJson('/bookings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            return {error: responseBody as CreateBookingError};
+        }
+
+        return {data: responseBody as BookingDto};
+    } catch (error) {
+        const timedOut = error instanceof Error && error.name === 'AbortError';
+        return {
+            error: {
+                message: timedOut
+                    ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend kÃ¸rer pÃ¥ ${API_BASE_URL}.`
+                    : `Forbindelsen til serveren fejlede. Kontroller backend og netvÃ¦rk. Aktiv URL: ${API_BASE_URL}`,
+            },
+        };
     }
 }
 

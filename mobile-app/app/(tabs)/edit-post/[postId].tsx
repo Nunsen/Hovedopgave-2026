@@ -134,6 +134,7 @@ export default function EditPostScreen() {
       onSubmit={handleSubmit}
       onBack={() => router.back()}
       onHomePress={() => router.replace('/home')}
+      onWashingPress={() => router.push('/book-washing')}
       onProfilePress={() => router.push('/profile')}
     />
   );

@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { BottomNav } from '@/components/navigation/bottom-nav';
 import { useAuth } from '@/context/AuthContext';
 
 export type CategoryOption = 'Begivenhed' | 'Generelt' | 'Vigtig info';
@@ -71,6 +72,7 @@ type PostFormScreenProps = {
   onSubmit: (form: PostForm) => Promise<{ fieldErrors?: PostFieldErrors; message?: string } | void>;
   onBack: () => void;
   onHomePress?: () => void;
+  onWashingPress?: () => void;
   onProfilePress?: () => void;
 };
 
@@ -86,6 +88,7 @@ export function PostFormScreen({
   onSubmit,
   onBack,
   onHomePress,
+  onWashingPress,
   onProfilePress,
 }: PostFormScreenProps) {
   const { user, isLoading } = useAuth();
@@ -337,19 +340,12 @@ export function PostFormScreen({
           </View>
         </ScrollView>
 
-        <View style={styles.bottomBar}>
-          <Pressable style={styles.bottomItem}>
-            <Ionicons name="chatbubble-ellipses-outline" size={26} color="#111827" />
-          </Pressable>
-
-          <Pressable style={styles.bottomItem} onPress={onHomePress ?? onBack}>
-            <Ionicons name="home-outline" size={30} color="#111827" />
-          </Pressable>
-
-          <Pressable style={styles.bottomItem} onPress={onProfilePress}>
-            <Ionicons name="person" size={28} color="#9CA3AF" />
-          </Pressable>
-        </View>
+        <BottomNav
+          active="chat"
+          onHomePress={onHomePress ?? onBack}
+          onWashingPress={onWashingPress}
+          onProfilePress={onProfilePress}
+        />
       </View>
     </SafeAreaView>
   );
@@ -626,24 +622,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-  },
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 72,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingBottom: 8,
-  },
-  bottomItem: {
-    width: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

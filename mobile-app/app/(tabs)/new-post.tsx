@@ -69,6 +69,7 @@ export default function NewPostScreen() {
       onSubmit={handleSubmit}
       onBack={() => router.back()}
       onHomePress={() => router.replace('/home')}
+      onWashingPress={() => router.push('/book-washing')}
       onProfilePress={() => router.push('/profile')}
     />
   );
