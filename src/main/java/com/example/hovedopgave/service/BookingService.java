@@ -24,8 +24,8 @@ import java.util.Map;
 public class BookingService {
 
     private static final String WASHING_FACILITY_TYPE = "WASHING_ROOM";
-    private static final LocalTime FIRST_SLOT_START = LocalTime.of(8, 0);
-    private static final LocalTime LAST_SLOT_END = LocalTime.of(20, 0);
+    private static final LocalTime FIRST_SLOT_START = LocalTime.of(7, 0);
+    private static final LocalTime LAST_SLOT_END = LocalTime.of(23, 0);
 
     private final BookingRepository bookingRepository;
     private final FacilityRepository facilityRepository;
@@ -51,13 +51,13 @@ public class BookingService {
                 .toList();
     }
 
-    public BookingAvailabilityResponse getAvailability(String dateValue) {
+    public BookingAvailabilityResponse getAvailability(String dateValue, Integer userId) {
         LocalDate date = parseDate(dateValue);
         Facility facility = getWashingFacility();
         List<Booking> bookings = bookingRepository
                 .findAllByFacilityFacilityIdAndDateOrderByStartTimeAsc(facility.getFacilityId(), date);
 
-        List<BookingTimeSlotResponse> slots = buildSlots(bookings);
+        List<BookingTimeSlotResponse> slots = buildSlots(bookings, userId);
 
         return new BookingAvailabilityResponse(
                 date.toString(),
@@ -117,7 +117,40 @@ public class BookingService {
         return toResponse(savedBooking);
     }
 
-    private List<BookingTimeSlotResponse> buildSlots(List<Booking> bookings) {
+    public void deleteBooking(Integer bookingId, Integer userId) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+
+        if (bookingId == null) {
+            fieldErrors.put("bookingId", "Booking-id er obligatorisk.");
+        }
+
+        if (userId == null) {
+            fieldErrors.put("userId", "Bruger-id er obligatorisk.");
+        }
+
+        if (!fieldErrors.isEmpty()) {
+            throw new BookingValidationException("Kunne ikke slette bookingen.", fieldErrors);
+        }
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingValidationException(
+                        "Bookingen findes ikke.",
+                        Map.of("bookingId", "Der findes ingen booking med dette id.")
+                ));
+
+        Integer bookingUserId = booking.getUser() != null ? booking.getUser().getUserId() : null;
+
+        if (bookingUserId == null || !bookingUserId.equals(userId)) {
+            throw new BookingValidationException(
+                    "Du kan kun slette dine egne bookinger.",
+                    Map.of("userId", "Kun ejeren af bookingen kan slette den.")
+            );
+        }
+
+        bookingRepository.delete(booking);
+    }
+
+    private List<BookingTimeSlotResponse> buildSlots(List<Booking> bookings, Integer userId) {
         Map<LocalTime, Booking> bookingsByStartTime = new LinkedHashMap<>();
 
         for (Booking booking : bookings) {
@@ -128,14 +161,18 @@ public class BookingService {
         LocalTime currentTime = FIRST_SLOT_START;
 
         while (currentTime.isBefore(LAST_SLOT_END)) {
-            LocalTime nextTime = currentTime.plusHours(1);
+            LocalTime nextTime = currentTime.plusHours(2);
             Booking booking = bookingsByStartTime.get(currentTime);
 
             slots.add(new BookingTimeSlotResponse(
                     currentTime.toString(),
                     nextTime.toString(),
                     booking == null,
-                    booking != null ? booking.getBookingId() : null
+                    booking != null ? booking.getBookingId() : null,
+                    booking != null
+                            && userId != null
+                            && booking.getUser() != null
+                            && userId.equals(booking.getUser().getUserId())
             ));
 
             currentTime = nextTime;
@@ -191,11 +228,11 @@ public class BookingService {
             }
 
             if (parsedStartTime.isBefore(FIRST_SLOT_START) || parsedEndTime.isAfter(LAST_SLOT_END)) {
-                fieldErrors.put("startTime", "Vasketider skal ligge mellem 08:00 og 20:00.");
+                fieldErrors.put("startTime", "Vasketider skal ligge mellem 07:00 og 23:00.");
             }
 
-            if (!parsedStartTime.plusHours(1).equals(parsedEndTime)) {
-                fieldErrors.put("endTime", "En vasketid varer 1 time.");
+            if (!parsedStartTime.plusHours(2).equals(parsedEndTime)) {
+                fieldErrors.put("endTime", "En vasketid varer 2 timer.");
             }
         }
 

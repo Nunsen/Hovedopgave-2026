@@ -6,7 +6,7 @@ import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleShe
 
 import { BottomNav } from '@/components/navigation/bottom-nav';
 import { useAuth } from '@/context/AuthContext';
-import { BookingDto, getBookings } from '@/lib/api';
+import { BookingDto, deleteBooking, getBookings } from '@/lib/api';
 
 function formatDisplayDate(value: string | null) {
   if (!value) {
@@ -25,6 +25,7 @@ export default function MyBookingsScreen() {
   const { user, isLoading } = useAuth();
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [deletingBookingId, setDeletingBookingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -57,6 +58,36 @@ export default function MyBookingsScreen() {
     }, [loadBookings]),
   );
 
+  const handleDeleteBooking = (booking: BookingDto) => {
+    if (!user || !booking.bookingId) {
+      return;
+    }
+
+    Alert.alert(
+      'Slet vasketid',
+      'Vil du fjerne denne booking?',
+      [
+        { text: 'Annuller', style: 'cancel' },
+        {
+          text: 'Slet',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingBookingId(booking.bookingId!);
+            const result = await deleteBooking(booking.bookingId!, user.userId);
+            setDeletingBookingId(null);
+
+            if (result.error) {
+              Alert.alert('Kunne ikke slette bookingen', result.error);
+              return;
+            }
+
+            await loadBookings();
+          },
+        },
+      ],
+    );
+  };
+
   if (isLoading || loadingBookings) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -86,10 +117,26 @@ export default function MyBookingsScreen() {
           ) : (
             bookings.map((booking) => (
               <View key={booking.bookingId} style={styles.bookingCard}>
-                <Text style={styles.bookingTitle}>Vaskeri</Text>
-                <Text style={styles.bookingMeta}>
-                  {formatDisplayDate(booking.date)} · {booking.startTime} - {booking.endTime}
-                </Text>
+                <View style={styles.bookingRow}>
+                  <View style={styles.bookingContent}>
+                    <Text style={styles.bookingTitle}>Vaskeri</Text>
+                    <Text style={styles.bookingMeta}>
+                      {formatDisplayDate(booking.date)} | {booking.startTime} - {booking.endTime}
+                    </Text>
+                  </View>
+
+                  <Pressable
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteBooking(booking)}
+                    disabled={deletingBookingId === booking.bookingId}
+                  >
+                    <Ionicons
+                      name={deletingBookingId === booking.bookingId ? 'hourglass-outline' : 'trash-outline'}
+                      size={18}
+                      color="#B42318"
+                    />
+                  </Pressable>
+                </View>
               </View>
             ))
           )}
@@ -160,6 +207,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 14,
   },
+  bookingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  bookingContent: {
+    flex: 1,
+  },
   bookingTitle: {
     fontSize: 15,
     fontWeight: '700',
@@ -169,5 +225,13 @@ const styles = StyleSheet.create({
   bookingMeta: {
     fontSize: 13,
     color: '#6B7280',
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
   },
 });

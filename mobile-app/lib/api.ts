@@ -137,6 +137,7 @@ export type BookingSlotDto = {
     endTime: string;
     available: boolean;
     bookingId: number | null;
+    ownedByCurrentUser: boolean;
 };
 
 export type BookingAvailabilityDto = {
@@ -340,9 +341,11 @@ export async function getBookings(
 
 export async function getBookingAvailability(
     date: string,
+    userId?: number,
 ): Promise<{ data?: BookingAvailabilityDto; error?: string }> {
     try {
-        const {response, responseBody} = await fetchJson(`/bookings/availability?date=${date}`, {
+        const query = userId ? `/bookings/availability?date=${date}&userId=${userId}` : `/bookings/availability?date=${date}`;
+        const {response, responseBody} = await fetchJson(query, {
             method: 'GET',
         });
 
@@ -382,6 +385,25 @@ export async function createBooking(
                     : `Forbindelsen til serveren fejlede. Kontroller backend og netvÃ¦rk. Aktiv URL: ${API_BASE_URL}`,
             },
         };
+    }
+}
+
+export async function deleteBooking(
+    bookingId: number,
+    userId: number,
+): Promise<{ error?: string }> {
+    try {
+        const {response} = await fetchJson(`/bookings/${bookingId}?userId=${userId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke slette bookingen.'};
+        }
+
+        return {};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
     }
 }
 

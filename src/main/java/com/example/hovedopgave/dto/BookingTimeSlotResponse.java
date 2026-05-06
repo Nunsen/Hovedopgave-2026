@@ -4,6 +4,7 @@ public record BookingTimeSlotResponse(
         String startTime,
         String endTime,
         boolean available,
-        Integer bookingId
+        Integer bookingId,
+        boolean ownedByCurrentUser
 ) {
 }

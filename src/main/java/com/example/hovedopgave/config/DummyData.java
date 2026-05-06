@@ -14,6 +14,10 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -24,6 +28,8 @@ import java.util.stream.Collectors;
 
 @Configuration
 public class DummyData {
+
+    private static final Path BOOKINGS_RESET_MARKER = Path.of("data", "bookings-reset-v1.marker");
 
     @Bean
     CommandLineRunner seedData(
@@ -74,7 +80,7 @@ public class DummyData {
                         LocalDate.now().plusDays(14),
                         LocalTime.of(17, 0),
                         LocalTime.of(22, 0),
-                        "Faellesgaarden",
+                        "Fællesgården",
                         LocalDateTime.now().minusDays(2)
                 ));
 
@@ -118,8 +124,29 @@ public class DummyData {
                 ));
             }
 
+            resetBookingsOnce(bookingRepository);
             normalizeFacilities(facilityRepository, bookingRepository);
         };
+    }
+
+    private void resetBookingsOnce(BookingRepository bookingRepository) {
+        if (Files.exists(BOOKINGS_RESET_MARKER)) {
+            return;
+        }
+
+        bookingRepository.deleteAll();
+
+        try {
+            Path parent = BOOKINGS_RESET_MARKER.getParent();
+
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+
+            Files.createFile(BOOKINGS_RESET_MARKER);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Kunne ikke oprette booking reset-markoer.", exception);
+        }
     }
 
     private void normalizeFacilities(
@@ -167,19 +194,6 @@ public class DummyData {
 
         if (!legacyBookings.isEmpty()) {
             bookingRepository.deleteAll(legacyBookings);
-        }
-
-        List<Booking> invalidLaundryBookings = bookingRepository.findAll().stream()
-                .filter(booking -> booking.getFacility() != null
-                        && laundryFacilityId != null
-                        && laundryFacilityId.equals(booking.getFacility().getFacilityId())
-                        && booking.getStartTime() != null
-                        && booking.getEndTime() != null
-                        && !booking.getStartTime().plusHours(1).equals(booking.getEndTime()))
-                .toList();
-
-        if (!invalidLaundryBookings.isEmpty()) {
-            bookingRepository.deleteAll(invalidLaundryBookings);
         }
 
         List<Facility> legacyFacilities = facilityRepository.findAll().stream()

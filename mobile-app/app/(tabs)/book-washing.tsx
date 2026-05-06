@@ -1,10 +1,11 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -20,6 +21,7 @@ import {
   BookingDto,
   BookingSlotDto,
   createBooking,
+  deleteBooking,
   getBookingAvailability,
   getBookings,
 } from '@/lib/api';
@@ -46,7 +48,7 @@ function formatDisplayDate(value: string) {
 
 export default function BookWashingScreen() {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { logout, user, isLoading } = useAuth();
   const dateOptions = useMemo(() => createDateOptions(), []);
 
   const [selectedDate, setSelectedDate] = useState(formatDate(dateOptions[0]));
@@ -55,6 +57,8 @@ export default function BookWashingScreen() {
   const [loadingAvailability, setLoadingAvailability] = useState(true);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [bookingSlotKey, setBookingSlotKey] = useState<string | null>(null);
+  const [deletingBookingId, setDeletingBookingId] = useState<number | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -65,7 +69,7 @@ export default function BookWashingScreen() {
   const loadAvailability = useCallback(async () => {
     setLoadingAvailability(true);
 
-    const result = await getBookingAvailability(selectedDate);
+    const result = await getBookingAvailability(selectedDate, user?.userId);
 
     if (result.error) {
       Alert.alert('Kunne ikke hente ledige tider', result.error);
@@ -75,7 +79,7 @@ export default function BookWashingScreen() {
 
     setAvailability(result.data ?? null);
     setLoadingAvailability(false);
-  }, [selectedDate]);
+  }, [selectedDate, user?.userId]);
 
   const loadUserBookings = useCallback(async () => {
     if (!user) {
@@ -112,12 +116,14 @@ export default function BookWashingScreen() {
     loadAvailability();
   }, [loadAvailability]);
 
-  const handleBookSlot = async (slot: BookingSlotDto) => {
-    if (!user || !availability) {
-      return;
-    }
+  const handleLogout = async () => {
+    setIsSidebarOpen(false);
+    await logout();
+    router.replace('/login');
+  };
 
-    if (!slot.available) {
+  const handleBookSlot = async (slot: BookingSlotDto) => {
+    if (!user || !availability || !slot.available) {
       return;
     }
 
@@ -144,6 +150,40 @@ export default function BookWashingScreen() {
     Alert.alert('Vasketid booket', `Du har booket ${slot.startTime} - ${slot.endTime} den ${formatDisplayDate(selectedDate)}.`);
   };
 
+  const handleDeleteBooking = async (bookingId: number) => {
+    if (!user) {
+      return;
+    }
+
+    setDeletingBookingId(bookingId);
+    const result = await deleteBooking(bookingId, user.userId);
+    setDeletingBookingId(null);
+
+    if (result.error) {
+      Alert.alert('Kunne ikke slette bookingen', result.error);
+      return;
+    }
+
+    await Promise.all([loadAvailability(), loadUserBookings()]);
+  };
+
+  const confirmDeleteBooking = (bookingId: number) => {
+    Alert.alert(
+      'Slet vasketid',
+      'Vil du fjerne denne booking?',
+      [
+        { text: 'Annuller', style: 'cancel' },
+        {
+          text: 'Slet',
+          style: 'destructive',
+          onPress: async () => {
+            await handleDeleteBooking(bookingId);
+          },
+        },
+      ],
+    );
+  };
+
   if (isLoading || loadingAvailability) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -159,18 +199,96 @@ export default function BookWashingScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        <Modal
+          transparent
+          visible={isSidebarOpen}
+          animationType="fade"
+          onRequestClose={() => setIsSidebarOpen(false)}
+        >
+          <View style={styles.sidebarOverlay}>
+            <Pressable style={styles.sidebarBackdrop} onPress={() => setIsSidebarOpen(false)} />
+
+            <View style={styles.sidebarPanel}>
+              <View>
+                <View style={styles.sidebarHeader}>
+                  <Text style={styles.sidebarTitle}>Menu</Text>
+                  <Pressable
+                    style={styles.sidebarCloseButton}
+                    onPress={() => setIsSidebarOpen(false)}
+                  >
+                    <Ionicons name="close" size={22} color="#111827" />
+                  </Pressable>
+                </View>
+
+                <View style={styles.sidebarUserCard}>
+                  <Text style={styles.sidebarUserName}>{user.fullName}</Text>
+                  <Text style={styles.sidebarUserMeta}>{user.email}</Text>
+                  <Text style={styles.sidebarUserMeta}>{user.role}</Text>
+                </View>
+
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.replace('/home');
+                  }}
+                >
+                  <Ionicons name="home-outline" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>Forside</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.push('/new-post');
+                  }}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>Nyt opslag</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.push('/profile');
+                  }}
+                >
+                  <Ionicons name="person-outline" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>Profil</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.replace('/book-washing');
+                  }}
+                >
+                  <MaterialCommunityIcons name="washing-machine" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>Vaskeri</Text>
+                </Pressable>
+              </View>
+
+              <Pressable style={styles.logoutButton} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.logoutButtonText}>Log ud</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Pressable style={styles.iconButton} onPress={() => router.replace('/home')}>
-              <Ionicons name="arrow-back" size={22} color="#111827" />
+            <Pressable style={styles.iconButton} onPress={() => setIsSidebarOpen(true)}>
+              <Feather name="menu" size={22} color="#1F2937" />
             </Pressable>
             <MaterialCommunityIcons name="washing-machine" size={26} color="#3F7FC4" />
             <Text style={styles.headerTitle}>Vasketider</Text>
           </View>
 
-          <Pressable style={styles.iconButton} onPress={() => router.push('/my-bookings')}>
-            <Ionicons name="list-outline" size={22} color="#111827" />
-          </Pressable>
+          <View style={styles.iconButtonPlaceholder} />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -182,7 +300,7 @@ export default function BookWashingScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Vælg dato</Text>
+            <Text style={styles.sectionTitle}>Vaelg dato</Text>
 
             <ScrollView
               horizontal
@@ -229,36 +347,54 @@ export default function BookWashingScreen() {
             <View style={styles.legendRow}>
               <LegendDot color="#D1FAE5" label="Ledig" />
               <LegendDot color="#FEE2E2" label="Optaget" />
+              <LegendDot color="#FED7AA" label="Din booking" />
             </View>
 
             <View style={styles.slotGrid}>
               {availability?.slots.map((slot) => {
                 const slotKey = `${selectedDate}-${slot.startTime}`;
                 const isSubmitting = bookingSlotKey === slotKey;
+                const isDeleting = slot.bookingId != null && deletingBookingId === slot.bookingId;
+                const canDelete = !slot.available && slot.ownedByCurrentUser && !!slot.bookingId;
 
                 return (
                   <Pressable
                     key={slotKey}
                     style={[
                       styles.slotCard,
-                      slot.available ? styles.slotAvailable : styles.slotUnavailable,
+                      slot.available ? styles.slotAvailable : canDelete ? styles.slotOwned : styles.slotUnavailable,
                     ]}
-                    disabled={!slot.available || isSubmitting}
-                    onPress={() => handleBookSlot(slot)}
+                    disabled={(!slot.available && !canDelete) || isSubmitting || isDeleting}
+                    onPress={() => {
+                      if (canDelete && slot.bookingId) {
+                        confirmDeleteBooking(slot.bookingId);
+                        return;
+                      }
+
+                      handleBookSlot(slot);
+                    }}
                   >
                     <View style={styles.slotHeader}>
                       <Text style={styles.slotTime}>
                         {slot.startTime} - {slot.endTime}
                       </Text>
                       <MaterialCommunityIcons
-                        name={slot.available ? 'check-circle-outline' : 'close-circle-outline'}
+                        name={slot.available ? 'check-circle-outline' : canDelete ? 'trash-can-outline' : 'close-circle-outline'}
                         size={20}
-                        color={slot.available ? '#15803D' : '#B42318'}
+                        color={slot.available ? '#15803D' : canDelete ? '#B54708' : '#B42318'}
                       />
                     </View>
 
                     <Text style={styles.slotStatus}>
-                      {isSubmitting ? 'Booker...' : slot.available ? 'Ledig tid' : 'Optaget'}
+                      {isSubmitting
+                        ? 'Booker...'
+                        : isDeleting
+                          ? 'Sletter...'
+                          : slot.available
+                            ? 'Ledig tid'
+                            : canDelete
+                              ? 'Din booking'
+                              : 'Optaget'}
                     </Text>
                   </Pressable>
                 );
@@ -276,16 +412,24 @@ export default function BookWashingScreen() {
             ) : (
               userBookings.slice(0, 4).map((booking) => (
                 <View key={booking.bookingId} style={styles.bookingCard}>
-                  <View>
+                  <View style={styles.bookingCardContent}>
                     <Text style={styles.bookingTitle}>Vaskeri</Text>
                     <Text style={styles.bookingMeta}>
-                      {booking.date ? formatDisplayDate(booking.date) : ''} · {booking.startTime} - {booking.endTime}
+                      {booking.date ? formatDisplayDate(booking.date) : ''} | {booking.startTime} - {booking.endTime}
                     </Text>
                   </View>
 
-                  <View style={styles.bookingBadge}>
-                    <Text style={styles.bookingBadgeText}>Booket</Text>
-                  </View>
+                  <Pressable
+                    style={styles.deleteBookingButton}
+                    onPress={() => booking.bookingId && confirmDeleteBooking(booking.bookingId)}
+                    disabled={deletingBookingId === booking.bookingId}
+                  >
+                    <Ionicons
+                      name={deletingBookingId === booking.bookingId ? 'hourglass-outline' : 'trash-outline'}
+                      size={18}
+                      color="#B42318"
+                    />
+                  </Pressable>
                 </View>
               ))
             )}
@@ -327,6 +471,92 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  sidebarOverlay: {
+    flex: 1,
+    flexDirection: 'row-reverse',
+    backgroundColor: 'rgba(17, 24, 39, 0.28)',
+  },
+  sidebarBackdrop: {
+    flex: 1,
+  },
+  sidebarPanel: {
+    width: 278,
+    backgroundColor: '#FFFFFF',
+    paddingTop: 58,
+    paddingHorizontal: 18,
+    paddingBottom: 24,
+    justifyContent: 'space-between',
+    shadowColor: '#111827',
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 10,
+  },
+  sidebarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  sidebarTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  sidebarCloseButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sidebarUserCard: {
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: '#EFF6FF',
+    marginBottom: 18,
+  },
+  sidebarUserName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  sidebarUserMeta: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  sidebarLink: {
+    minHeight: 48,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  sidebarLinkText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  logoutButton: {
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: '#3F7FC4',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  logoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -349,6 +579,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F9FAFB',
+  },
+  iconButtonPlaceholder: {
+    width: 34,
+    height: 34,
   },
   headerTitle: {
     fontSize: 20,
@@ -445,6 +679,7 @@ const styles = StyleSheet.create({
   legendRow: {
     flexDirection: 'row',
     gap: 16,
+    flexWrap: 'wrap',
   },
   legendItem: {
     flexDirection: 'row',
@@ -478,6 +713,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderColor: '#FECACA',
   },
+  slotOwned: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+  },
   slotHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -509,6 +748,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
+  },
+  bookingCardContent: {
+    flex: 1,
   },
   bookingTitle: {
     fontSize: 15,
@@ -520,15 +763,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
   },
-  bookingBadge: {
-    borderRadius: 999,
-    backgroundColor: '#DBEAFE',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  bookingBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1D4ED8',
+  deleteBookingButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
   },
 });
