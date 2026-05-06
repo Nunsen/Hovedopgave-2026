@@ -5,6 +5,9 @@ import com.example.hovedopgave.dto.BookingCreateRequest;
 import com.example.hovedopgave.dto.BookingFacilityAvailabilityResponse;
 import com.example.hovedopgave.dto.BookingResponse;
 import com.example.hovedopgave.dto.BookingTimeSlotResponse;
+import com.example.hovedopgave.dto.PartyRoomAvailabilityResponse;
+import com.example.hovedopgave.dto.PartyRoomBookingRequest;
+import com.example.hovedopgave.dto.PartyRoomDayAvailabilityResponse;
 import com.example.hovedopgave.model.Booking;
 import com.example.hovedopgave.model.Facility;
 import com.example.hovedopgave.model.User;
@@ -16,6 +19,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
+import java.time.temporal.TemporalAdjusters;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,8 +31,11 @@ public class BookingService {
 
     private static final String WASHING_MACHINE_TYPE = "WASHING_MACHINE";
     private static final String DRYER_TYPE = "DRYER";
+    private static final String PARTY_ROOM_TYPE = "PARTY_ROOM";
     private static final LocalTime FIRST_SLOT_START = LocalTime.of(7, 0);
     private static final LocalTime LAST_SLOT_END = LocalTime.of(23, 0);
+    private static final LocalTime PARTY_ROOM_START = LocalTime.MIDNIGHT;
+    private static final LocalTime PARTY_ROOM_END = LocalTime.of(23, 59);
 
     private final BookingRepository bookingRepository;
     private final FacilityRepository facilityRepository;
@@ -127,6 +135,146 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
         return toResponse(savedBooking);
+    }
+
+    public PartyRoomAvailabilityResponse getPartyRoomAvailability(String monthValue, Integer userId) {
+        YearMonth month = parseMonth(monthValue);
+        Facility partyRoom = getPartyRoomFacility();
+
+        LocalDate calendarStart = month.atDay(1).with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        LocalDate calendarEnd = month.atEndOfMonth().with(TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY));
+
+        List<Booking> bookings = bookingRepository.findAllByFacilityFacilityIdAndDateBetweenOrderByDateAsc(
+                partyRoom.getFacilityId(),
+                calendarStart.minusDays(3),
+                calendarEnd
+        );
+
+        Map<LocalDate, Booking> bookingsByDate = new LinkedHashMap<>();
+        for (Booking booking : bookings) {
+            bookingsByDate.put(booking.getDate(), booking);
+        }
+
+        List<PartyRoomDayAvailabilityResponse> days = new java.util.ArrayList<>();
+        LocalDate cursor = calendarStart;
+
+        while (!cursor.isAfter(calendarEnd)) {
+            Booking booking = bookingsByDate.get(cursor);
+            String status = "available";
+            Integer bookingId = null;
+            boolean ownedByCurrentUser = false;
+
+            if (booking != null) {
+                bookingId = booking.getBookingId();
+                ownedByCurrentUser = userId != null
+                        && booking.getUser() != null
+                        && userId.equals(booking.getUser().getUserId());
+                status = ownedByCurrentUser ? "owned" : "booked";
+            } else if (isBlockedByPartyRoomCooldown(cursor, bookingsByDate)) {
+                status = "cooldown";
+            }
+
+            days.add(new PartyRoomDayAvailabilityResponse(
+                    cursor.toString(),
+                    cursor.getDayOfMonth(),
+                    cursor.getMonthValue() == month.getMonthValue(),
+                    status,
+                    bookingId,
+                    ownedByCurrentUser
+            ));
+
+            cursor = cursor.plusDays(1);
+        }
+
+        return new PartyRoomAvailabilityResponse(
+                month.toString(),
+                partyRoom.getFacilityId(),
+                partyRoom.getName(),
+                days
+        );
+    }
+
+    public BookingResponse createPartyRoomBooking(PartyRoomBookingRequest request) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+
+        if (request == null) {
+            fieldErrors.put("request", "Request body mangler.");
+        } else {
+            if (request.userId() == null) {
+                fieldErrors.put("userId", "Bruger-id er obligatorisk.");
+            }
+
+            String dateValue = normalize(request.date());
+            if (dateValue == null) {
+                fieldErrors.put("date", "Dato er obligatorisk.");
+            } else if (!isValidDate(dateValue)) {
+                fieldErrors.put("date", "Brug formatet AAAA-MM-DD.");
+            }
+        }
+
+        if (!fieldErrors.isEmpty()) {
+            throw new BookingValidationException("Udfyld bookingen korrekt.", fieldErrors);
+        }
+
+        User user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new BookingValidationException(
+                        "Brugeren findes ikke.",
+                        Map.of("userId", "Der findes ingen bruger med dette id.")
+                ));
+
+        Facility partyRoom = getPartyRoomFacility();
+        LocalDate date = LocalDate.parse(request.date().trim());
+
+        if (date.isBefore(LocalDate.now())) {
+            throw new BookingValidationException(
+                    "Dato er ugyldig.",
+                    Map.of("date", "Du kan ikke booke en tidligere dato.")
+            );
+        }
+
+        boolean overlaps = bookingRepository.existsByFacilityFacilityIdAndDateAndStartTimeLessThanAndEndTimeGreaterThan(
+                partyRoom.getFacilityId(),
+                date,
+                PARTY_ROOM_END,
+                PARTY_ROOM_START
+        );
+
+        if (overlaps) {
+            throw new BookingValidationException(
+                    "Datoen er allerede booket.",
+                    Map.of("date", "Festsalen er allerede reserveret denne dag.")
+            );
+        }
+
+        List<Booking> previousBookings = bookingRepository.findAllByFacilityFacilityIdAndDateBetweenOrderByDateAsc(
+                partyRoom.getFacilityId(),
+                date.minusDays(3),
+                date.minusDays(1)
+        );
+
+        boolean violatesCooldown = previousBookings.stream()
+                .anyMatch(existingBooking -> {
+                    long daysAfterExistingBooking = java.time.temporal.ChronoUnit.DAYS.between(existingBooking.getDate(), date);
+                    return daysAfterExistingBooking > 0 && daysAfterExistingBooking < 4;
+                });
+
+        if (violatesCooldown) {
+            throw new BookingValidationException(
+                    "For kort mellem reservationer.",
+                    Map.of("date", "Festsalen er i nedkoelingsperiode. Der skal gaa 3 dage efter en reservation.")
+            );
+        }
+
+        Booking booking = new Booking();
+        booking.setUser(user);
+        booking.setFacility(partyRoom);
+        booking.setDate(date);
+        booking.setStartTime(PARTY_ROOM_START);
+        booking.setEndTime(PARTY_ROOM_END);
+        booking.setStatus("BOOKED");
+        booking.setCreatedAt(LocalDateTime.now());
+
+        return toResponse(bookingRepository.save(booking));
     }
 
     public void deleteBooking(Integer bookingId, Integer userId) {
@@ -267,6 +415,42 @@ public class BookingService {
         }
 
         return facilities;
+    }
+
+    private Facility getPartyRoomFacility() {
+        return facilityRepository.findFirstByTypeIgnoreCase(PARTY_ROOM_TYPE)
+                .orElseThrow(() -> new BookingValidationException(
+                        "Festsalen findes ikke.",
+                        Map.of("facility", "Der er ikke oprettet en festsal i databasen.")
+                ));
+    }
+
+    private boolean isBlockedByPartyRoomCooldown(LocalDate date, Map<LocalDate, Booking> bookingsByDate) {
+        return bookingsByDate.keySet().stream()
+                .anyMatch(existingDate -> {
+                    long daysAfterExistingBooking = java.time.temporal.ChronoUnit.DAYS.between(existingDate, date);
+                    return daysAfterExistingBooking > 0 && daysAfterExistingBooking < 4;
+                });
+    }
+
+    private YearMonth parseMonth(String value) {
+        String normalizedValue = normalize(value);
+
+        if (normalizedValue == null) {
+            throw new BookingValidationException(
+                    "Maaned er ugyldig.",
+                    Map.of("month", "Brug formatet AAAA-MM.")
+            );
+        }
+
+        try {
+            return YearMonth.parse(normalizedValue);
+        } catch (DateTimeParseException exception) {
+            throw new BookingValidationException(
+                    "Maaned er ugyldig.",
+                    Map.of("month", "Brug formatet AAAA-MM.")
+            );
+        }
     }
 
     private LocalDate parseDate(String value) {

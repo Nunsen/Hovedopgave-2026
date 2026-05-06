@@ -97,7 +97,15 @@ export default function BookWashingScreen() {
       return;
     }
 
-    const sortedBookings = [...(result.data ?? [])].sort((left, right) => {
+    const washingBookings = (result.data ?? []).filter((booking) => {
+      const facilityName = booking.facilityName?.toLowerCase() ?? '';
+      return facilityName.includes('vaskemaskine')
+        || facilityName.includes('tørretumbler')
+        || facilityName.includes('torretumbler')
+        || facilityName === 'vaskeri';
+    });
+
+    const sortedBookings = [...washingBookings].sort((left, right) => {
       const leftValue = `${left.date ?? ''} ${left.startTime ?? ''}`;
       const rightValue = `${right.date ?? ''} ${right.startTime ?? ''}`;
       return leftValue.localeCompare(rightValue);
@@ -267,6 +275,17 @@ export default function BookWashingScreen() {
                   <MaterialCommunityIcons name="washing-machine" size={20} color="#111827" />
                   <Text style={styles.sidebarLinkText}>Vaskeri</Text>
                 </Pressable>
+
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.replace('/book-partyroom');
+                  }}
+                >
+                  <MaterialCommunityIcons name="party-popper" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>Festsal</Text>
+                </Pressable>
               </View>
 
               <Pressable style={styles.logoutButton} onPress={handleLogout}>
@@ -392,6 +411,7 @@ export default function BookWashingScreen() {
           active="washing"
           onHomePress={() => router.replace('/home')}
           onWashingPress={() => router.replace('/book-washing')}
+          onPartyPress={() => router.replace('/book-partyroom')}
           onProfilePress={() => router.push('/profile')}
         />
       </View>

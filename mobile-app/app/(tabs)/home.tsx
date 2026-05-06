@@ -174,6 +174,17 @@ export default function HomeScreen() {
                     <MaterialCommunityIcons name="washing-machine" size={20} color="#111827" />
                     <Text style={styles.sidebarLinkText}>Vaskeri</Text>
                   </Pressable>
+
+                  <Pressable
+                      style={styles.sidebarLink}
+                      onPress={() => {
+                        setIsSidebarOpen(false);
+                        router.push('/book-partyroom');
+                      }}
+                  >
+                    <MaterialCommunityIcons name="party-popper" size={20} color="#111827" />
+                    <Text style={styles.sidebarLinkText}>Festsal</Text>
+                  </Pressable>
                 </View>
 
                 <Pressable style={styles.logoutButton} onPress={handleLogout}>
@@ -313,6 +324,7 @@ export default function HomeScreen() {
               active="home"
               onHomePress={() => router.replace('/home')}
               onWashingPress={() => router.push('/book-washing')}
+              onPartyPress={() => router.push('/book-partyroom')}
               onProfilePress={() => router.push('/profile')}
           />
         </View>

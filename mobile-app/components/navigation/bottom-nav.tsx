@@ -2,9 +2,10 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 type BottomNavProps = {
-  active: 'home' | 'washing' | 'profile' | 'chat';
+  active: 'home' | 'washing' | 'party' | 'profile' | 'chat';
   onHomePress?: () => void;
   onWashingPress?: () => void;
+  onPartyPress?: () => void;
   onProfilePress?: () => void;
   onChatPress?: () => void;
 };
@@ -13,6 +14,7 @@ export function BottomNav({
   active,
   onHomePress,
   onWashingPress,
+  onPartyPress,
   onProfilePress,
   onChatPress,
 }: BottomNavProps) {
@@ -35,6 +37,14 @@ export function BottomNav({
           name="washing-machine"
           size={28}
           color={active === 'washing' ? '#111827' : '#9CA3AF'}
+        />
+      </Pressable>
+
+      <Pressable style={styles.bottomItem} onPress={onPartyPress}>
+        <MaterialCommunityIcons
+          name="party-popper"
+          size={26}
+          color={active === 'party' ? '#111827' : '#9CA3AF'}
         />
       </Pressable>
 

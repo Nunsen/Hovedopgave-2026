@@ -146,6 +146,7 @@ export default function MyBookingsScreen() {
           active="washing"
           onHomePress={() => router.replace('/home')}
           onWashingPress={() => router.replace('/book-washing')}
+          onPartyPress={() => router.push('/book-partyroom')}
           onProfilePress={() => router.push('/profile')}
         />
       </View>

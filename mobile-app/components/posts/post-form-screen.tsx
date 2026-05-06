@@ -73,6 +73,7 @@ type PostFormScreenProps = {
   onBack: () => void;
   onHomePress?: () => void;
   onWashingPress?: () => void;
+  onPartyPress?: () => void;
   onProfilePress?: () => void;
 };
 
@@ -89,6 +90,7 @@ export function PostFormScreen({
   onBack,
   onHomePress,
   onWashingPress,
+  onPartyPress,
   onProfilePress,
 }: PostFormScreenProps) {
   const { user, isLoading } = useAuth();
@@ -344,6 +346,7 @@ export function PostFormScreen({
           active="chat"
           onHomePress={onHomePress ?? onBack}
           onWashingPress={onWashingPress}
+          onPartyPress={onPartyPress}
           onProfilePress={onProfilePress}
         />
       </View>

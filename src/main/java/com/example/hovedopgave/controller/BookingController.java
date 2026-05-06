@@ -3,6 +3,8 @@ package com.example.hovedopgave.controller;
 import com.example.hovedopgave.dto.BookingAvailabilityResponse;
 import com.example.hovedopgave.dto.BookingCreateRequest;
 import com.example.hovedopgave.dto.BookingResponse;
+import com.example.hovedopgave.dto.PartyRoomAvailabilityResponse;
+import com.example.hovedopgave.dto.PartyRoomBookingRequest;
 import com.example.hovedopgave.dto.ValidationErrorResponse;
 import com.example.hovedopgave.service.BookingService;
 import org.springframework.http.HttpStatus;
@@ -45,6 +47,20 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@RequestBody BookingCreateRequest request) {
         BookingResponse response = bookingService.createBooking(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/party-room/availability")
+    public PartyRoomAvailabilityResponse getPartyRoomAvailability(
+            @RequestParam String month,
+            @RequestParam(required = false) Integer userId
+    ) {
+        return bookingService.getPartyRoomAvailability(month, userId);
+    }
+
+    @PostMapping("/party-room")
+    public ResponseEntity<BookingResponse> createPartyRoomBooking(@RequestBody PartyRoomBookingRequest request) {
+        BookingResponse response = bookingService.createPartyRoomBooking(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

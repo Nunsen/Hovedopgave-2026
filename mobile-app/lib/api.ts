@@ -151,6 +151,27 @@ export type BookingFacilityAvailabilityDto = {
     slots: BookingSlotDto[];
 };
 
+export type PartyRoomDayAvailabilityDto = {
+    date: string;
+    dayOfMonth: number;
+    inCurrentMonth: boolean;
+    status: 'available' | 'booked' | 'cooldown' | 'owned';
+    bookingId: number | null;
+    ownedByCurrentUser: boolean;
+};
+
+export type PartyRoomAvailabilityDto = {
+    month: string;
+    facilityId: number;
+    facilityName: string;
+    days: PartyRoomDayAvailabilityDto[];
+};
+
+export type CreatePartyRoomBookingPayload = {
+    userId: number;
+    date: string;
+};
+
 export type CreateBookingPayload = {
     userId: number;
     facilityId: number;
@@ -387,6 +408,57 @@ export async function createBooking(
                 message: timedOut
                     ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend kÃ¸rer pÃ¥ ${API_BASE_URL}.`
                     : `Forbindelsen til serveren fejlede. Kontroller backend og netvÃ¦rk. Aktiv URL: ${API_BASE_URL}`,
+            },
+        };
+    }
+}
+
+export async function getPartyRoomAvailability(
+    month: string,
+    userId?: number,
+): Promise<{ data?: PartyRoomAvailabilityDto; error?: string }> {
+    try {
+        const query = userId
+            ? `/bookings/party-room/availability?month=${month}&userId=${userId}`
+            : `/bookings/party-room/availability?month=${month}`;
+        const {response, responseBody} = await fetchJson(query, {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke hente ledige festsalsdatoer.'};
+        }
+
+        return {data: responseBody as PartyRoomAvailabilityDto};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function createPartyRoomBooking(
+    payload: CreatePartyRoomBookingPayload,
+): Promise<{ data?: BookingDto; error?: CreateBookingError }> {
+    try {
+        const {response, responseBody} = await fetchJson('/bookings/party-room', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            return {error: responseBody as CreateBookingError};
+        }
+
+        return {data: responseBody as BookingDto};
+    } catch (error) {
+        const timedOut = error instanceof Error && error.name === 'AbortError';
+        return {
+            error: {
+                message: timedOut
+                    ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend kører på ${API_BASE_URL}.`
+                    : `Forbindelsen til serveren fejlede. Kontroller backend og netværk. Aktiv URL: ${API_BASE_URL}`,
             },
         };
     }
