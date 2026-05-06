@@ -2,6 +2,7 @@ package com.example.hovedopgave.service;
 
 import com.example.hovedopgave.dto.BookingAvailabilityResponse;
 import com.example.hovedopgave.dto.BookingCreateRequest;
+import com.example.hovedopgave.dto.BookingFacilityAvailabilityResponse;
 import com.example.hovedopgave.dto.BookingResponse;
 import com.example.hovedopgave.dto.BookingTimeSlotResponse;
 import com.example.hovedopgave.model.Booking;
@@ -23,7 +24,8 @@ import java.util.Map;
 @Service
 public class BookingService {
 
-    private static final String WASHING_FACILITY_TYPE = "WASHING_ROOM";
+    private static final String WASHING_MACHINE_TYPE = "WASHING_MACHINE";
+    private static final String DRYER_TYPE = "DRYER";
     private static final LocalTime FIRST_SLOT_START = LocalTime.of(7, 0);
     private static final LocalTime LAST_SLOT_END = LocalTime.of(23, 0);
 
@@ -53,18 +55,20 @@ public class BookingService {
 
     public BookingAvailabilityResponse getAvailability(String dateValue, Integer userId) {
         LocalDate date = parseDate(dateValue);
-        Facility facility = getWashingFacility();
-        List<Booking> bookings = bookingRepository
-                .findAllByFacilityFacilityIdAndDateOrderByStartTimeAsc(facility.getFacilityId(), date);
+        List<BookingFacilityAvailabilityResponse> facilities = getLaundryFacilities().stream()
+                .map(facility -> {
+                    List<Booking> bookings = bookingRepository
+                            .findAllByFacilityFacilityIdAndDateOrderByStartTimeAsc(facility.getFacilityId(), date);
 
-        List<BookingTimeSlotResponse> slots = buildSlots(bookings, userId);
+                    return new BookingFacilityAvailabilityResponse(
+                            facility.getFacilityId(),
+                            facility.getName(),
+                            buildSlots(bookings, userId)
+                    );
+                })
+                .toList();
 
-        return new BookingAvailabilityResponse(
-                date.toString(),
-                facility.getFacilityId(),
-                facility.getName(),
-                slots
-        );
+        return new BookingAvailabilityResponse(date.toString(), facilities);
     }
 
     public BookingResponse createBooking(BookingCreateRequest request) {
@@ -85,6 +89,14 @@ public class BookingService {
                         "Faciliteten findes ikke.",
                         Map.of("facilityId", "Der findes ingen facilitet med dette id.")
                 ));
+
+        if (!WASHING_MACHINE_TYPE.equalsIgnoreCase(facility.getType())
+                && !DRYER_TYPE.equalsIgnoreCase(facility.getType())) {
+            throw new BookingValidationException(
+                    "Faciliteten kan ikke bookes her.",
+                    Map.of("facilityId", "Vaelg en vaskemaskine eller en toerretumbler.")
+            );
+        }
 
         LocalDate date = LocalDate.parse(request.date().trim());
         LocalTime startTime = LocalTime.parse(request.startTime().trim());
@@ -239,12 +251,22 @@ public class BookingService {
         return fieldErrors;
     }
 
-    private Facility getWashingFacility() {
-        return facilityRepository.findFirstByTypeIgnoreCase(WASHING_FACILITY_TYPE)
-                .orElseThrow(() -> new BookingValidationException(
-                        "Vaskeriet findes ikke.",
-                        Map.of("facility", "Der er ikke oprettet et vaskeri i databasen.")
-                ));
+    private List<Facility> getLaundryFacilities() {
+        List<Facility> washingMachines = facilityRepository.findAllByTypeIgnoreCaseOrderByNameAsc(WASHING_MACHINE_TYPE);
+        List<Facility> dryers = facilityRepository.findAllByTypeIgnoreCaseOrderByNameAsc(DRYER_TYPE);
+
+        List<Facility> facilities = new java.util.ArrayList<>();
+        facilities.addAll(washingMachines);
+        facilities.addAll(dryers);
+
+        if (facilities.isEmpty()) {
+            throw new BookingValidationException(
+                    "Vaskeriet findes ikke.",
+                    Map.of("facility", "Der er ikke oprettet vaskefaciliteter i databasen.")
+            );
+        }
+
+        return facilities;
     }
 
     private LocalDate parseDate(String value) {

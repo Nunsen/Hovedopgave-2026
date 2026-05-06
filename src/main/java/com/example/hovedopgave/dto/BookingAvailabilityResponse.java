@@ -4,8 +4,6 @@ import java.util.List;
 
 public record BookingAvailabilityResponse(
         String date,
-        Integer facilityId,
-        String facilityName,
-        List<BookingTimeSlotResponse> slots
+        List<BookingFacilityAvailabilityResponse> facilities
 ) {
 }

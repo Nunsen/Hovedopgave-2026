@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Configuration
 public class DummyData {
 
-    private static final Path BOOKINGS_RESET_MARKER = Path.of("data", "bookings-reset-v1.marker");
+    private static final Path BOOKINGS_RESET_MARKER = Path.of("data", "bookings-reset-v2.marker");
 
     @Bean
     CommandLineRunner seedData(
@@ -155,34 +155,46 @@ public class DummyData {
     ) {
         List<Facility> existingFacilities = facilityRepository.findAll();
 
-        Facility laundryFacility = existingFacilities.stream()
-                .filter(facility -> matchesFacility(facility, Set.of("laundry", "vaskeri", "laundry room 1"), Set.of("WASHING_ROOM", "LAUNDRY")))
-                .findFirst()
-                .orElseGet(Facility::new);
-        boolean clearLegacyLaundryBookings = isLegacyLaundryFacility(laundryFacility);
+        Facility washingMachineOne = ensureFacility(
+                existingFacilities,
+                facilityRepository,
+                Set.of("vaskemaskine 1", "laundry", "vaskeri", "laundry room 1"),
+                Set.of("WASHING_ROOM", "LAUNDRY"),
+                "Vaskemaskine 1",
+                "WASHING_MACHINE"
+        );
 
-        laundryFacility.setName("laundry");
-        laundryFacility.setType("WASHING_ROOM");
-        laundryFacility.setStatus("ACTIVE");
-        laundryFacility = facilityRepository.save(laundryFacility);
-        Integer laundryFacilityId = laundryFacility.getFacilityId();
+        Facility washingMachineTwo = ensureFacility(
+                existingFacilities,
+                facilityRepository,
+                Set.of("vaskemaskine 2"),
+                Set.of(),
+                "Vaskemaskine 2",
+                "WASHING_MACHINE"
+        );
 
-        if (clearLegacyLaundryBookings && laundryFacilityId != null) {
-            bookingRepository.deleteAllByFacilityFacilityId(laundryFacilityId);
-        }
+        Facility dryer = ensureFacility(
+                existingFacilities,
+                facilityRepository,
+                Set.of("tørretumbler", "torretumbler"),
+                Set.of(),
+                "Tørretumbler",
+                "DRYER"
+        );
 
-        Facility partyFacility = existingFacilities.stream()
-                .filter(facility -> matchesFacility(facility, Set.of("festsal"), Set.of("PARTY_ROOM", "FESTSAL")))
-                .findFirst()
-                .orElseGet(Facility::new);
-
-        partyFacility.setName("festsal");
-        partyFacility.setType("PARTY_ROOM");
-        partyFacility.setStatus("ACTIVE");
-        partyFacility = facilityRepository.save(partyFacility);
+        Facility partyFacility = ensureFacility(
+                existingFacilities,
+                facilityRepository,
+                Set.of("festsal"),
+                Set.of("PARTY_ROOM", "FESTSAL"),
+                "festsal",
+                "PARTY_ROOM"
+        );
 
         Set<Integer> allowedFacilityIds = Set.of(
-                laundryFacility.getFacilityId(),
+                washingMachineOne.getFacilityId(),
+                washingMachineTwo.getFacilityId(),
+                dryer.getFacilityId(),
                 partyFacility.getFacilityId()
         );
 
@@ -205,15 +217,29 @@ public class DummyData {
         }
     }
 
+    private Facility ensureFacility(
+            List<Facility> existingFacilities,
+            FacilityRepository facilityRepository,
+            Set<String> names,
+            Set<String> types,
+            String targetName,
+            String targetType
+    ) {
+        Facility facility = existingFacilities.stream()
+                .filter(existingFacility -> matchesFacility(existingFacility, names, types))
+                .findFirst()
+                .orElseGet(Facility::new);
+
+        facility.setName(targetName);
+        facility.setType(targetType);
+        facility.setStatus("ACTIVE");
+        return facilityRepository.save(facility);
+    }
+
     private boolean matchesFacility(Facility facility, Set<String> names, Set<String> types) {
         String facilityName = facility.getName() == null ? "" : facility.getName().trim().toLowerCase();
         String facilityType = facility.getType() == null ? "" : facility.getType().trim().toUpperCase();
         return names.contains(facilityName) || types.contains(facilityType);
-    }
-
-    private boolean isLegacyLaundryFacility(Facility facility) {
-        String facilityName = facility.getName() == null ? "" : facility.getName().trim().toLowerCase();
-        return "laundry room 1".equals(facilityName) || "vaskeri".equals(facilityName);
     }
 
     private Post createPost(

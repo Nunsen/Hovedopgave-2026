@@ -142,6 +142,10 @@ export type BookingSlotDto = {
 
 export type BookingAvailabilityDto = {
     date: string;
+    facilities: BookingFacilityAvailabilityDto[];
+};
+
+export type BookingFacilityAvailabilityDto = {
     facilityId: number;
     facilityName: string;
     slots: BookingSlotDto[];
