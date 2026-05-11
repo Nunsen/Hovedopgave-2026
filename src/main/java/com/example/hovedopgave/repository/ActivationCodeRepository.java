@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface ActivationCodeRepository extends JpaRepository<ActivationCode, Integer> {
     Optional<ActivationCode> findByCodeIgnoreCase(String code);
+    void deleteAllByUserUserId(Integer userId);
 }

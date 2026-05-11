@@ -274,7 +274,6 @@ export default function BookPartyRoomScreen() {
             <Pressable style={styles.iconButton} onPress={() => setIsSidebarOpen(true)}>
               <Feather name="menu" size={22} color="#1F2937" />
             </Pressable>
-            <MaterialCommunityIcons name="home-group-plus" size={28} color="#3F7FC4" />
             <Text style={styles.headerTitle}>Book festsal</Text>
           </View>
         </View>

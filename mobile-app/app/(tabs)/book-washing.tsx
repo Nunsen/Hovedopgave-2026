@@ -301,7 +301,6 @@ export default function BookWashingScreen() {
             <Pressable style={styles.iconButton} onPress={() => setIsSidebarOpen(true)}>
               <Feather name="menu" size={22} color="#1F2937" />
             </Pressable>
-            <MaterialCommunityIcons name="washing-machine" size={26} color="#3F7FC4" />
             <Text style={styles.headerTitle}>Vasketider</Text>
           </View>
 
@@ -343,7 +342,7 @@ export default function BookWashingScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Vaelg dato</Text>
+            <Text style={styles.sectionTitle}>Vælg dato</Text>
 
             <ScrollView
               horizontal

@@ -493,6 +493,34 @@ export type ResetPasswordPayload = {
     newPassword: string;
 };
 
+export type UserProfileDto = {
+    userId: number;
+    firstName: string;
+    lastName: string;
+    fullName: string;
+    email: string;
+    phoneNumber: string | null;
+    birthDate: string | null;
+    apartmentNumber: string | null;
+    password: string;
+};
+
+export type UpdateUserProfilePayload = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    birthDate: string;
+    apartmentNumber: string;
+    password: string;
+    confirmPassword: string;
+};
+
+export type UpdateUserProfileError = {
+    message: string;
+    fieldErrors?: Partial<Record<keyof UpdateUserProfilePayload, string>>;
+};
+
 export type LoginUserSuccess = {
     userId: number;
     fullName: string;
@@ -583,6 +611,72 @@ export async function loginUser(
                     : `Forbindelsen til serveren fejlede. Kontroller backend og netværk. Aktiv URL: ${API_BASE_URL}`,
             },
         };
+    }
+}
+
+export async function getUserProfile(
+    userId: number,
+): Promise<{ data?: UserProfileDto; error?: string }> {
+    try {
+        const {response, responseBody} = await fetchJson(`/users/${userId}/profile`, {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke hente profiloplysninger.'};
+        }
+
+        return {data: responseBody as UserProfileDto};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function updateUserProfile(
+    userId: number,
+    payload: UpdateUserProfilePayload,
+): Promise<{ data?: UserProfileDto; error?: UpdateUserProfileError }> {
+    try {
+        const {response, responseBody} = await fetchJson(`/users/${userId}/profile`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            return {error: responseBody as UpdateUserProfileError};
+        }
+
+        return {data: responseBody as UserProfileDto};
+    } catch (error) {
+        const timedOut = error instanceof Error && error.name === 'AbortError';
+        return {
+            error: {
+                message: timedOut
+                    ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend kører på ${API_BASE_URL}.`
+                    : `Forbindelsen til serveren fejlede. Kontroller backend og netværk. Aktiv URL: ${API_BASE_URL}`,
+            },
+        };
+    }
+}
+
+export async function deleteUserProfile(
+    userId: number,
+): Promise<{ error?: string }> {
+    try {
+        const {response} = await fetchJson(`/users/${userId}/profile`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke slette profilen.'};
+        }
+
+        return {};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
     }
 }
 

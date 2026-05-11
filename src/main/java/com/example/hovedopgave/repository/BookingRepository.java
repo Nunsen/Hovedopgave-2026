@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
     List<Booking> findByUserUserId(Integer userId);
+    void deleteAllByUserUserId(Integer userId);
     List<Booking> findAllByFacilityFacilityIdAndDateOrderByStartTimeAsc(Integer facilityId, LocalDate date);
     List<Booking> findAllByFacilityFacilityIdAndDateBetweenOrderByDateAsc(Integer facilityId, LocalDate startDate, LocalDate endDate);
     List<Booking> findAllByUserUserIdAndFacilityTypeIgnoreCaseAndDateBetweenOrderByDateAsc(

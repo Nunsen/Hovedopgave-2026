@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PostRepository extends JpaRepository<Post, Integer> {
     java.util.List<Post> findAllByOrderByIsImportantDescCreatedAtDesc();
+    java.util.List<Post> findAllByUserUserId(Integer userId);
 }

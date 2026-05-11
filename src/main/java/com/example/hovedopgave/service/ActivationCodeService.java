@@ -41,21 +41,21 @@ public class ActivationCodeService {
                         Map.of("code", "QR-koden er ugyldig.")
                 ));
 
-        if (Boolean.TRUE.equals(activationCode.getIsUsed())) {
-            throw new ActivationCodeValidationException(
-                    "Aktiveringskoden er allerede brugt.",
-                    Map.of("code", "QR-koden er allerede brugt.")
-            );
-        }
+        //if (Boolean.TRUE.equals(activationCode.getIsUsed())) {
+        //    throw new ActivationCodeValidationException(
+        //            "Aktiveringskoden er allerede brugt.",
+        //            Map.of("code", "QR-koden er allerede brugt.")
+        //    );
+        //}
 
         if (activationCode.getExpirationDate().isBefore(LocalDateTime.now())) {
             throw new ActivationCodeValidationException(
-                    "Aktiveringskoden er udloeber.",
-                    Map.of("code", "QR-koden er udloeber.")
+                    "Aktiveringskoden er udløbet.",
+                    Map.of("code", "QR-koden er udløbet.")
             );
         }
 
-        activationCode.setIsUsed(true);
+        //activationCode.setIsUsed(true);
         activationCode.setUser(user);
         user.setIsActivated(true);
 

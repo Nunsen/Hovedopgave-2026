@@ -9,4 +9,5 @@ public interface PostParticipationRepository extends JpaRepository<PostParticipa
     long countByPostPostIdAndIsAttendingTrue(Integer postId);
     Optional<PostParticipation> findByPostPostIdAndUserUserId(Integer postId, Integer userId);
     void deleteAllByPostPostId(Integer postId);
+    void deleteAllByUserUserId(Integer userId);
 }

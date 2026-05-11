@@ -51,8 +51,8 @@ public class DummyData {
             if (activationCodeRepository.findByCodeIgnoreCase("HOVEDOPGAVE-QR-2026").isEmpty()) {
                 ActivationCode activationCode = new ActivationCode();
                 activationCode.setCode("HOVEDOPGAVE-QR-2026");
-                activationCode.setIsUsed(false);
-                activationCode.setExpirationDate(LocalDateTime.now().plusYears(1));
+                //activationCode.setIsUsed(false);
+                activationCode.setExpirationDate(LocalDateTime.now().plusYears(10));
                 activationCode.setUser(user);
                 activationCodeRepository.save(activationCode);
             }

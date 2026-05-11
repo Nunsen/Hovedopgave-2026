@@ -4,6 +4,8 @@ import com.example.hovedopgave.dto.UserRegistrationRequest;
 import com.example.hovedopgave.dto.UserRegistrationResponse;
 import com.example.hovedopgave.dto.UserLoginRequest;
 import com.example.hovedopgave.dto.UserLoginResponse;
+import com.example.hovedopgave.dto.UserProfileResponse;
+import com.example.hovedopgave.dto.UserProfileUpdateRequest;
 import com.example.hovedopgave.dto.UserResetPasswordRequest;
 import com.example.hovedopgave.dto.UserResetPasswordResponse;
 import com.example.hovedopgave.dto.ValidationErrorResponse;
@@ -15,6 +17,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,6 +41,27 @@ public class UserController {
     @GetMapping
     public List<User> getUsers() {
         return userRepository.findAll();
+    }
+
+    @GetMapping("/{userId}/profile")
+    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable Integer userId) {
+        UserProfileResponse response = userService.getUserProfile(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{userId}/profile")
+    public ResponseEntity<UserProfileResponse> updateUserProfile(
+            @PathVariable Integer userId,
+            @RequestBody UserProfileUpdateRequest request
+    ) {
+        UserProfileResponse response = userService.updateUserProfile(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{userId}/profile")
+    public ResponseEntity<Void> deleteUserProfile(@PathVariable Integer userId) {
+        userService.deleteUserProfile(userId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/register")

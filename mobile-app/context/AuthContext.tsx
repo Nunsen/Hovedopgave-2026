@@ -12,6 +12,7 @@ type PendingActivationUser = Pick<RegisterUserSuccess, 'userId' | 'fullName' | '
 type AuthContextValue = {
   user: AuthUser | null;
   login: (nextUser: AuthUser) => Promise<void>;
+  updateUser: (nextUser: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
   pendingActivationUser: PendingActivationUser | null;
@@ -61,6 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       pendingActivationUser,
       login: async (nextUser) => {
+        await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser));
+        setUser(nextUser);
+      },
+      updateUser: async (nextUser) => {
         await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser));
         setUser(nextUser);
       },
