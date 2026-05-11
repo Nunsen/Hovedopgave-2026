@@ -7,13 +7,13 @@ import {
     Alert,
     Modal,
     Pressable,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     View,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {BottomNav} from '@/components/navigation/bottom-nav';
 import {useAuth} from '@/context/AuthContext';
@@ -35,14 +35,37 @@ type CreateGroupFieldErrors = {
     description?: string;
 };
 
-function formatDateLabel(value: string | null) {
+function formatConversationTime(value: string | null) {
     if (!value) {
         return '';
     }
 
-    return new Date(value).toLocaleDateString('da-DK', {
-        day: '2-digit',
-        month: '2-digit',
+    const date = new Date(value);
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfTarget = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayDiff = Math.round((startOfToday.getTime() - startOfTarget.getTime()) / 86400000);
+
+    if (dayDiff === 0) {
+        return date.toLocaleTimeString('da-DK', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    if (dayDiff === 1) {
+        return 'I går';
+    }
+
+    if (dayDiff > 1 && dayDiff < 7) {
+        const weekday = date.toLocaleDateString('da-DK', {weekday: 'long'});
+        return weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    }
+
+    return date.toLocaleDateString('da-DK', {day: '2-digit', month: '2-digit'});
+}
+
+function formatMessageTime(value: string) {
+    return new Date(value).toLocaleTimeString('da-DK', {
+        hour: '2-digit',
+        minute: '2-digit',
     });
 }
 
@@ -52,6 +75,7 @@ export default function ChatScreen() {
     const [activeTab, setActiveTab] = useState<ChatTab>('Samtaler');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isConversationOpen, setIsConversationOpen] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [overview, setOverview] = useState<ChatOverviewDto | null>(null);
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
@@ -191,7 +215,6 @@ export default function ChatScreen() {
                         ),
                     };
                 });
-
             },
         });
 
@@ -227,6 +250,7 @@ export default function ChatScreen() {
         await loadOverview();
         setActiveTab('Samtaler');
         setSelectedGroupId(result.data?.groupId ?? groupId);
+        setIsConversationOpen(true);
     };
 
     const handleCreateGroup = async () => {
@@ -270,6 +294,7 @@ export default function ChatScreen() {
         await loadOverview();
         setActiveTab('Samtaler');
         setSelectedGroupId(result.data?.groupId ?? null);
+        setIsConversationOpen(true);
     };
 
     const handleSendMessage = async () => {
@@ -294,11 +319,7 @@ export default function ChatScreen() {
             const createdMessage = result.data;
 
             setMessages((currentMessages) => {
-                if (
-                    currentMessages.some(
-                        (message) => message.messageId === createdMessage.messageId,
-                    )
-                ) {
+                if (currentMessages.some((message) => message.messageId === createdMessage.messageId)) {
                     return currentMessages;
                 }
 
@@ -338,7 +359,8 @@ export default function ChatScreen() {
 
         return joinedGroups.filter((group) =>
             group.name.toLowerCase().includes(searchValue)
-            || group.description.toLowerCase().includes(searchValue),
+            || group.description.toLowerCase().includes(searchValue)
+            || (group.lastMessagePreview ?? '').toLowerCase().includes(searchValue),
         );
     }, [joinedGroups, searchText]);
 
@@ -366,8 +388,10 @@ export default function ChatScreen() {
         return null;
     }
 
+    const showConversationView = activeTab === 'Samtaler' && isConversationOpen && selectedGroup;
+
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
             <View style={styles.container}>
                 <Modal
                     transparent
@@ -482,259 +506,222 @@ export default function ChatScreen() {
                                 }}
                                 multiline
                             />
-                            {fieldErrors.description ?
-                                <Text style={styles.fieldError}>{fieldErrors.description}</Text> : null}
+                            {fieldErrors.description ? <Text style={styles.fieldError}>{fieldErrors.description}</Text> : null}
 
                             <Pressable
                                 style={[styles.primaryButton, creatingGroup ? styles.primaryButtonDisabled : null]}
                                 onPress={handleCreateGroup}
                                 disabled={creatingGroup}
                             >
-                                {creatingGroup ? <ActivityIndicator color="#FFFFFF"/> :
-                                    <Text style={styles.primaryButtonText}>Opret chatgruppe</Text>}
+                                {creatingGroup ? <ActivityIndicator color="#FFFFFF"/> : (
+                                    <Text style={styles.primaryButtonText}>Opret chatgruppe</Text>
+                                )}
                             </Pressable>
                         </View>
                     </View>
                 </Modal>
 
-                <View style={styles.header}>
-                    <Pressable style={styles.iconButton} onPress={() => setIsSidebarOpen(true)}>
-                        <Feather name="menu" size={22} color="#1F2937"/>
-                    </Pressable>
-
-                    <View style={styles.headerTitleWrap}>
-                        <MaterialCommunityIcons name="home-city-outline" size={26} color="#3F7FC4"/>
-                        <Text style={styles.headerTitle}>Chat</Text>
-                    </View>
-
-                    {user.role?.toUpperCase() === 'ADMIN' ? (
-                        <Pressable style={styles.iconButton} onPress={() => setIsCreateModalOpen(true)}>
-                            <Ionicons name="add" size={22} color="#1F2937"/>
-                        </Pressable>
-                    ) : (
-                        <View style={styles.headerSpacer}/>
-                    )}
-                </View>
-
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                    <View style={styles.segmentRow}>
-                        {(['Samtaler', 'Grupper'] as ChatTab[]).map((tab) => (
-                            <Pressable
-                                key={tab}
-                                style={[styles.segmentButton, activeTab === tab ? styles.segmentButtonActive : null]}
-                                onPress={() => setActiveTab(tab)}
-                            >
-                                <Text
-                                    style={[styles.segmentButtonText, activeTab === tab ? styles.segmentButtonTextActive : null]}>
-                                    {tab}
-                                </Text>
+                {showConversationView ? (
+                    <View style={styles.conversationScreen}>
+                        <View style={styles.detailHeader}>
+                            <Pressable style={styles.detailHeaderIcon} onPress={() => setIsConversationOpen(false)}>
+                                <Ionicons name="arrow-back" size={22} color="#2563EB"/>
                             </Pressable>
-                        ))}
-                    </View>
 
-                    <View style={styles.searchField}>
-                        <Feather name="search" size={18} color="#9CA3AF"/>
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Søg efter samtaler eller grupper"
-                            placeholderTextColor="#9CA3AF"
-                            value={searchText}
-                            onChangeText={setSearchText}
-                        />
-                    </View>
-
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>{activeTab === 'Samtaler' ? 'Dine grupper' : 'Grupper'}</Text>
-                        <Text
-                            style={styles.sectionLink}>{activeTab === 'Samtaler' ? `${filteredJoinedGroups.length}` : 'Se alle'}</Text>
-                    </View>
-
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.groupCarousel}>
-                        {(activeTab === 'Samtaler' ? filteredJoinedGroups : filteredAvailableGroups).map((group) => (
-                            <Pressable
-                                key={group.groupId}
-                                style={[
-                                    styles.groupCard,
-                                    activeTab === 'Samtaler' && selectedGroupId === group.groupId ? styles.groupCardActive : null,
-                                ]}
-                                onPress={() => {
-                                    if (activeTab === 'Samtaler') {
-                                        setSelectedGroupId(group.groupId);
-                                        return;
-                                    }
-
-                                    void handleJoinGroup(group.groupId);
-                                }}
-                            >
-                                <View style={styles.groupAvatar}>
-                                    <Ionicons
-                                        name={activeTab === 'Samtaler' ? 'people' : 'chatbubble-ellipses'}
-                                        size={22}
-                                        color={activeTab === 'Samtaler' && selectedGroupId === group.groupId ? '#FFFFFF' : '#3F7FC4'}
-                                    />
-                                </View>
-                                <Text style={styles.groupName}>{group.name}</Text>
-                                <Text style={styles.groupMembers}>{group.memberCount} medlemmer</Text>
-                                {activeTab === 'Grupper' ? (
-                                    <Text
-                                        style={styles.groupJoinText}>{joiningGroupId === group.groupId ? 'Tilmelder...' : 'Tilmeld'}</Text>
-                                ) : null}
-                            </Pressable>
-                        ))}
-
-                        {activeTab === 'Grupper' && user.role?.toUpperCase() === 'ADMIN' ? (
-                            <Pressable style={styles.createGroupCard} onPress={() => setIsCreateModalOpen(true)}>
-                                <Ionicons name="add" size={28} color="#6B7280"/>
-                                <Text style={styles.createGroupLabel}>Opret gruppe</Text>
-                            </Pressable>
-                        ) : null}
-                    </ScrollView>
-
-                    {activeTab === 'Samtaler' ? (
-                        <>
-                            <View style={styles.conversationList}>
-                                {filteredJoinedGroups.length === 0 ? (
-                                    <Text style={styles.emptyText}>Du er ikke tilmeldt nogen chatgrupper endnu.</Text>
-                                ) : (
-                                    filteredJoinedGroups.map((group) => (
-                                        <Pressable
-                                            key={group.groupId}
-                                            style={[styles.conversationItem, selectedGroupId === group.groupId ? styles.conversationItemActive : null]}
-                                            onPress={() => setSelectedGroupId(group.groupId)}
-                                        >
-                                            <View style={styles.conversationAvatar}>
-                                                <Ionicons name="people" size={22} color="#1F2937"/>
-                                            </View>
-
-                                            <View style={styles.conversationContent}>
-                                                <View style={styles.conversationTopRow}>
-                                                    <Text style={styles.conversationName}>{group.name}</Text>
-                                                    <Text
-                                                        style={styles.conversationTime}>{formatDateLabel(group.lastMessageAt)}</Text>
-                                                </View>
-
-                                                <Text style={styles.conversationPreview} numberOfLines={1}>
-                                                    {group.description}
-                                                </Text>
-                                            </View>
-                                        </Pressable>
-                                    ))
-                                )}
+                            <View style={styles.detailHeaderContent}>
+                                <Text style={styles.detailHeaderTitle}>{selectedGroup.name}</Text>
+                                <Text style={styles.detailHeaderSubtitle}>{selectedGroup.memberCount} medlemmer</Text>
                             </View>
 
-                            {selectedGroup ? (
-                                <View style={styles.chatCard}>
-                                    <View style={styles.chatHeader}>
-                                        <Text style={styles.chatTitle}>{selectedGroup.name}</Text>
-                                        <Text style={styles.chatSubtitle}>{selectedGroup.description}</Text>
-                                    </View>
+                            <Pressable style={styles.detailHeaderIcon}>
+                                <Ionicons name="information-circle-outline" size={24} color="#2563EB"/>
+                            </Pressable>
+                        </View>
 
-                                    <ScrollView
-                                        ref={messagesScrollRef}
-                                        style={styles.messagesBox}
-                                        contentContainerStyle={styles.messagesContent}
-                                        showsVerticalScrollIndicator={false}
-                                        nestedScrollEnabled
-                                        onContentSizeChange={() => {
-                                            messagesScrollRef.current?.scrollToEnd({animated: true});
-                                        }}
-                                    >
-                                        {loadingMessages ? (
-                                            <ActivityIndicator style={styles.inlineLoader}/>
-                                        ) : messages.length === 0 ? (
-                                            <Text style={styles.emptyText}>Der er ingen beskeder i gruppen endnu.</Text>
-                                        ) : (
-                                            messages.map((message) => {
-                                                const ownMessage = message.userId === user.userId;
-
-                                                return (
-                                                    <View
-                                                        key={`${message.messageId}-${message.sentAt}`}
-                                                        style={[styles.messageRow, ownMessage ? styles.messageRowOwn : null]}
-                                                    >
-                                                        <View
-                                                            style={[styles.messageBubble, ownMessage ? styles.messageBubbleOwn : null]}>
-                                                            <Text
-                                                                style={[styles.messageAuthor, ownMessage ? styles.messageAuthorOwn : null]}>
-                                                                {ownMessage ? 'Dig' : message.authorName}
-                                                            </Text>
-                                                            <Text
-                                                                style={[styles.messageText, ownMessage ? styles.messageTextOwn : null]}>
-                                                                {message.message}
-                                                            </Text>
-                                                        </View>
-                                                    </View>
-                                                );
-                                            })
-                                        )}
-                                    </ScrollView>
-
-                                    <View style={styles.composerRow}>
-                                        <TextInput
-                                            style={styles.composerInput}
-                                            placeholder="Skriv en besked..."
-                                            placeholderTextColor="#9CA3AF"
-                                            value={messageText}
-                                            onChangeText={setMessageText}
-                                        />
-                                        <Pressable
-                                            style={[
-                                                styles.sendButton,
-                                                !messageText.trim() ? styles.sendButtonDisabled : null,
-                                            ]}
-                                            onPress={handleSendMessage}
-                                            disabled={!messageText.trim()}
-                                        >
-                                            <Ionicons name="send" size={18} color="#FFFFFF"/>
-                                        </Pressable>
-                                    </View>
-                                </View>
-                            ) : null}
-                        </>
-                    ) : (
-                        <View style={styles.availableList}>
-                            {filteredAvailableGroups.length === 0 ? (
-                                <Text style={styles.emptyText}>Der er ingen andre grupper at tilmelde sig lige
-                                    nu.</Text>
+                        <ScrollView
+                            ref={messagesScrollRef}
+                            style={styles.detailMessages}
+                            contentContainerStyle={styles.detailMessagesContent}
+                            showsVerticalScrollIndicator={false}
+                            onContentSizeChange={() => {
+                                messagesScrollRef.current?.scrollToEnd({animated: true});
+                            }}
+                        >
+                            {loadingMessages ? (
+                                <ActivityIndicator style={styles.inlineLoader}/>
+                            ) : messages.length === 0 ? (
+                                <Text style={styles.emptyText}>Der er ingen beskeder i gruppen endnu.</Text>
                             ) : (
-                                filteredAvailableGroups.map((group) => (
-                                    <View key={group.groupId} style={styles.availableCard}>
-                                        <View style={styles.availableCardTop}>
-                                            <View style={styles.availableCardHeaderText}>
-                                                <Text style={styles.availableCardTitle}>{group.name}</Text>
-                                                <Text
-                                                    style={styles.availableCardMeta}>{group.memberCount} medlemmer</Text>
+                                messages.map((message) => {
+                                    const ownMessage = message.userId === user.userId;
+
+                                    return (
+                                        <View key={`${message.messageId}-${message.sentAt}`} style={styles.detailMessageBlock}>
+                                            <View style={[styles.detailMessageRow, ownMessage ? styles.detailMessageRowOwn : null]}>
+                                                {!ownMessage ? <View style={styles.detailAvatar}/> : null}
+
+                                                <View style={[styles.detailBubbleWrap, ownMessage ? styles.detailBubbleWrapOwn : null]}>
+                                                    <View style={[styles.detailBubble, ownMessage ? styles.detailBubbleOwn : null]}>
+                                                        <Text style={[styles.detailAuthor, ownMessage ? styles.detailAuthorOwn : null]}>
+                                                            {ownMessage ? 'Dig' : message.authorName}
+                                                        </Text>
+                                                        <Text style={[styles.detailMessageText, ownMessage ? styles.detailMessageTextOwn : null]}>
+                                                            {message.message}
+                                                        </Text>
+                                                    </View>
+                                                    <Text style={[styles.detailTime, ownMessage ? styles.detailTimeOwn : null]}>
+                                                        {formatMessageTime(message.sentAt)}
+                                                    </Text>
+                                                </View>
                                             </View>
-
-                                            <Pressable
-                                                style={[styles.joinButton, joiningGroupId === group.groupId ? styles.primaryButtonDisabled : null]}
-                                                onPress={() => handleJoinGroup(group.groupId)}
-                                                disabled={joiningGroupId === group.groupId}
-                                            >
-                                                <Text
-                                                    style={styles.joinButtonText}>{joiningGroupId === group.groupId ? 'Tilmelder...' : 'Tilmeld'}</Text>
-                                            </Pressable>
                                         </View>
+                                    );
+                                })
+                            )}
+                        </ScrollView>
 
-                                        <Text style={styles.availableCardDescription}>{group.description}</Text>
-                                        <Text style={styles.availableCardCreator}>Oprettet
-                                            af {group.createdByName}</Text>
-                                    </View>
-                                ))
+                        <View style={styles.detailComposerBar}>
+                            <TextInput
+                                style={styles.detailComposerInput}
+                                placeholder="Skriv en besked..."
+                                placeholderTextColor="#9CA3AF"
+                                value={messageText}
+                                onChangeText={setMessageText}
+                            />
+                            <Pressable
+                                style={[styles.detailSendButton, !messageText.trim() ? styles.sendButtonDisabled : null]}
+                                onPress={handleSendMessage}
+                                disabled={!messageText.trim()}
+                            >
+                                <Ionicons name="send" size={18} color="#FFFFFF"/>
+                            </Pressable>
+                        </View>
+                    </View>
+                ) : (
+                    <>
+                        <View style={styles.header}>
+                            <Pressable style={styles.iconButton} onPress={() => setIsSidebarOpen(true)}>
+                                <Feather name="menu" size={22} color="#1F2937"/>
+                            </Pressable>
+
+                            <View style={styles.headerTitleWrap}>
+                                <MaterialCommunityIcons name="chat" size={24} color="#2563EB"/>
+                                <Text style={styles.headerTitle}>Chat</Text>
+                            </View>
+
+                            {activeTab === 'Grupper' && user.role?.toUpperCase() === 'ADMIN' ? (
+                                <Pressable style={styles.iconButton} onPress={() => setIsCreateModalOpen(true)}>
+                                    <Ionicons name="add" size={22} color="#2563EB"/>
+                                </Pressable>
+                            ) : (
+                                <View style={styles.headerSpacer}/>
                             )}
                         </View>
-                    )}
-                </ScrollView>
 
-                <BottomNav
-                    active="chat"
-                    onChatPress={() => router.replace('/chat')}
-                    onHomePress={() => router.replace('/home')}
-                    onWashingPress={() => router.push('/book-washing')}
-                    onPartyPress={() => router.push('/book-partyroom')}
-                    onProfilePress={() => router.push('/profile')}
-                />
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                            <View style={styles.segmentRow}>
+                                {(['Samtaler', 'Grupper'] as ChatTab[]).map((tab) => (
+                                    <Pressable
+                                        key={tab}
+                                        style={[styles.segmentButton, activeTab === tab ? styles.segmentButtonActive : null]}
+                                        onPress={() => {
+                                            setActiveTab(tab);
+                                            setIsConversationOpen(false);
+                                        }}
+                                    >
+                                        <Text style={[styles.segmentButtonText, activeTab === tab ? styles.segmentButtonTextActive : null]}>
+                                            {tab}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+
+                            <View style={styles.searchField}>
+                                <Feather name="search" size={18} color="#9CA3AF"/>
+                                <TextInput
+                                    style={styles.searchInput}
+                                    placeholder="Søg efter samtaler eller grupper"
+                                    placeholderTextColor="#9CA3AF"
+                                    value={searchText}
+                                    onChangeText={setSearchText}
+                                />
+                            </View>
+
+                            {activeTab === 'Samtaler' ? (
+                                <View style={styles.conversationListCard}>
+                                    {filteredJoinedGroups.length === 0 ? (
+                                        <Text style={styles.emptyStateText}>Du er ikke tilmeldt nogen chatgrupper endnu.</Text>
+                                    ) : (
+                                        filteredJoinedGroups.map((group, index) => (
+                                            <Pressable
+                                                key={group.groupId}
+                                                style={[styles.conversationItem, index === filteredJoinedGroups.length - 1 ? styles.conversationItemLast : null]}
+                                                onPress={() => {
+                                                    setSelectedGroupId(group.groupId);
+                                                    setIsConversationOpen(true);
+                                                }}
+                                            >
+                                                <View style={styles.conversationAvatar}>
+                                                    <Ionicons name="people" size={22} color="#2563EB"/>
+                                                </View>
+
+                                                <View style={styles.conversationContent}>
+                                                    <View style={styles.conversationTopRow}>
+                                                        <Text style={styles.conversationName}>{group.name}</Text>
+                                                        <Text style={styles.conversationTime}>{formatConversationTime(group.lastMessageAt)}</Text>
+                                                    </View>
+
+                                                    <Text style={styles.conversationPreview} numberOfLines={1}>
+                                                        {group.lastMessagePreview ?? group.description}
+                                                    </Text>
+                                                </View>
+                                            </Pressable>
+                                        ))
+                                    )}
+                                </View>
+                            ) : (
+                                <View style={styles.availableList}>
+                                    {filteredAvailableGroups.length === 0 ? (
+                                        <Text style={styles.emptyText}>Der er ingen andre grupper at tilmelde sig lige nu.</Text>
+                                    ) : (
+                                        filteredAvailableGroups.map((group) => (
+                                            <View key={group.groupId} style={styles.availableCard}>
+                                                <View style={styles.availableCardTop}>
+                                                    <View style={styles.availableCardHeaderText}>
+                                                        <Text style={styles.availableCardTitle}>{group.name}</Text>
+                                                        <Text style={styles.availableCardMeta}>{group.memberCount} medlemmer</Text>
+                                                    </View>
+
+                                                    <Pressable
+                                                        style={[styles.joinButton, joiningGroupId === group.groupId ? styles.primaryButtonDisabled : null]}
+                                                        onPress={() => handleJoinGroup(group.groupId)}
+                                                        disabled={joiningGroupId === group.groupId}
+                                                    >
+                                                        <Text style={styles.joinButtonText}>
+                                                            {joiningGroupId === group.groupId ? 'Tilmelder...' : 'Tilmeld'}
+                                                        </Text>
+                                                    </Pressable>
+                                                </View>
+
+                                                <Text style={styles.availableCardDescription}>{group.description}</Text>
+                                                <Text style={styles.availableCardCreator}>Oprettet af {group.createdByName}</Text>
+                                            </View>
+                                        ))
+                                    )}
+                                </View>
+                            )}
+                        </ScrollView>
+
+                        <BottomNav
+                            active="chat"
+                            onChatPress={() => router.replace('/chat')}
+                            onHomePress={() => router.replace('/home')}
+                            onWashingPress={() => router.push('/book-washing')}
+                            onPartyPress={() => router.push('/book-partyroom')}
+                            onProfilePress={() => router.push('/profile')}
+                        />
+                    </>
+                )}
             </View>
         </SafeAreaView>
     );
@@ -753,16 +740,16 @@ const styles = StyleSheet.create({
         borderBottomColor: '#E5E7EB',
     },
     iconButton: {
-        width: 34,
-        height: 34,
-        borderRadius: 12,
+        width: 36,
+        height: 36,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#F9FAFB',
     },
     headerTitleWrap: {flexDirection: 'row', alignItems: 'center', gap: 10},
     headerTitle: {fontSize: 20, fontWeight: '800', color: '#111827'},
-    headerSpacer: {width: 34, height: 34},
+    headerSpacer: {width: 36, height: 36},
     scrollContent: {paddingTop: 14, paddingBottom: 110},
     segmentRow: {
         flexDirection: 'row',
@@ -784,8 +771,8 @@ const styles = StyleSheet.create({
     segmentButtonText: {fontSize: 14, fontWeight: '700', color: '#6B7280'},
     segmentButtonTextActive: {color: '#FFFFFF'},
     searchField: {
-        height: 46,
-        borderRadius: 14,
+        height: 44,
+        borderRadius: 16,
         paddingHorizontal: 12,
         flexDirection: 'row',
         alignItems: 'center',
@@ -793,65 +780,30 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: '#E5E7EB',
-        marginBottom: 18,
+        marginBottom: 14,
     },
     searchInput: {flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0},
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 10,
-    },
-    sectionTitle: {fontSize: 16, fontWeight: '800', color: '#111827'},
-    sectionLink: {fontSize: 13, fontWeight: '700', color: '#3F7FC4'},
-    groupCarousel: {gap: 10, paddingBottom: 12},
-    groupCard: {
-        width: 120,
-        borderRadius: 16,
+    conversationListCard: {
         borderWidth: 1,
         borderColor: '#E5E7EB',
+        borderRadius: 18,
         backgroundColor: '#FFFFFF',
-        padding: 12,
+        overflow: 'hidden',
     },
-    groupCardActive: {borderColor: '#3F7FC4', backgroundColor: '#EFF6FF'},
-    groupAvatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#EEF2FF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 10,
-    },
-    groupName: {fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 4},
-    groupMembers: {fontSize: 12, color: '#6B7280'},
-    groupJoinText: {marginTop: 8, fontSize: 12, fontWeight: '700', color: '#3F7FC4'},
-    createGroupCard: {
-        width: 120,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderStyle: 'dashed',
-        backgroundColor: '#FFFFFF',
-        padding: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    createGroupLabel: {marginTop: 10, fontSize: 13, fontWeight: '700', color: '#6B7280', textAlign: 'center'},
-    conversationList: {gap: 10, marginBottom: 16},
     conversationItem: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingVertical: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 14,
         borderBottomWidth: 1,
         borderBottomColor: '#F3F4F6',
     },
-    conversationItemActive: {backgroundColor: '#F9FAFB', borderRadius: 14, paddingHorizontal: 10},
+    conversationItemLast: {borderBottomWidth: 0},
     conversationAvatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         backgroundColor: '#EFF6FF',
         alignItems: 'center',
         justifyContent: 'center',
@@ -862,43 +814,65 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 4,
+        gap: 8,
     },
-    conversationName: {fontSize: 15, fontWeight: '700', color: '#111827'},
+    conversationName: {flex: 1, fontSize: 15, fontWeight: '700', color: '#111827'},
     conversationTime: {fontSize: 12, color: '#6B7280'},
-    conversationPreview: {fontSize: 13, color: '#6B7280'},
-    chatCard: {
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderRadius: 18,
-        backgroundColor: '#FFFFFF',
-        padding: 14,
-        marginBottom: 10,
+    conversationPreview: {fontSize: 13, color: '#6B7280', lineHeight: 18},
+    conversationScreen: {flex: 1, paddingTop: 2},
+    detailHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingBottom: 12,
     },
-    chatHeader: {marginBottom: 12},
-    chatTitle: {fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 4},
-    chatSubtitle: {fontSize: 13, color: '#6B7280'},
-    messagesBox: {height: 320, marginBottom: 12},
-    messagesContent: {paddingBottom: 4},
+    detailHeaderIcon: {
+        width: 36,
+        height: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    detailHeaderContent: {flex: 1},
+    detailHeaderTitle: {fontSize: 18, fontWeight: '800', color: '#111827'},
+    detailHeaderSubtitle: {fontSize: 14, color: '#6B7280', marginTop: 2},
+    detailMessages: {flex: 1},
+    detailMessagesContent: {paddingTop: 10, paddingBottom: 20},
     inlineLoader: {marginVertical: 24},
-    messageRow: {alignItems: 'flex-start', marginBottom: 10},
-    messageRowOwn: {alignItems: 'flex-end'},
-    messageBubble: {
-        maxWidth: '82%',
-        borderRadius: 16,
-        backgroundColor: '#F3F4F6',
-        paddingHorizontal: 12,
-        paddingVertical: 10,
+    detailMessageBlock: {marginBottom: 12},
+    detailMessageRow: {flexDirection: 'row', alignItems: 'flex-end', gap: 10},
+    detailMessageRowOwn: {justifyContent: 'flex-end'},
+    detailAvatar: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: '#E5E7EB',
     },
-    messageBubbleOwn: {backgroundColor: '#3F7FC4'},
-    messageAuthor: {fontSize: 11, fontWeight: '700', color: '#4B5563', marginBottom: 4},
-    messageAuthorOwn: {color: '#DBEAFE'},
-    messageText: {fontSize: 14, lineHeight: 20, color: '#111827'},
-    messageTextOwn: {color: '#FFFFFF'},
-    composerRow: {flexDirection: 'row', alignItems: 'center', gap: 10},
-    composerInput: {
+    detailBubbleWrap: {maxWidth: '78%'},
+    detailBubbleWrapOwn: {alignItems: 'flex-end'},
+    detailBubble: {
+        borderRadius: 18,
+        backgroundColor: '#F5F7FB',
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+    },
+    detailBubbleOwn: {backgroundColor: '#2563EB'},
+    detailAuthor: {fontSize: 11, fontWeight: '700', color: '#4B5563', marginBottom: 4},
+    detailAuthorOwn: {color: '#DBEAFE'},
+    detailMessageText: {fontSize: 15, lineHeight: 22, color: '#111827'},
+    detailMessageTextOwn: {color: '#FFFFFF'},
+    detailTime: {fontSize: 11, color: '#9CA3AF', marginTop: 6},
+    detailTimeOwn: {textAlign: 'right'},
+    detailComposerBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingTop: 10,
+        paddingBottom: 8,
+    },
+    detailComposerInput: {
         flex: 1,
-        minHeight: 46,
-        borderRadius: 14,
+        minHeight: 48,
+        borderRadius: 18,
         borderWidth: 1,
         borderColor: '#E5E7EB',
         backgroundColor: '#FFFFFF',
@@ -906,13 +880,13 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#111827',
     },
-    sendButton: {
+    detailSendButton: {
         width: 46,
         height: 46,
-        borderRadius: 14,
+        borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#3F7FC4',
+        backgroundColor: '#2563EB',
     },
     sendButtonDisabled: {opacity: 0.6},
     availableList: {gap: 12},
@@ -945,6 +919,13 @@ const styles = StyleSheet.create({
     },
     joinButtonText: {color: '#FFFFFF', fontSize: 13, fontWeight: '700'},
     emptyText: {fontSize: 14, color: '#6B7280', lineHeight: 20},
+    emptyStateText: {
+        fontSize: 14,
+        color: '#6B7280',
+        lineHeight: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 18,
+    },
     sidebarOverlay: {flex: 1, flexDirection: 'row-reverse', backgroundColor: 'rgba(17, 24, 39, 0.28)'},
     sidebarBackdrop: {flex: 1},
     sidebarPanel: {
@@ -998,49 +979,50 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
     },
-    logoutButtonText: {color: '#FFFFFF', fontSize: 15, fontWeight: '700'},
+    logoutButtonText: {fontSize: 15, fontWeight: '700', color: '#FFFFFF'},
     createOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(17, 24, 39, 0.45)',
+        backgroundColor: 'rgba(17, 24, 39, 0.35)',
         justifyContent: 'flex-end',
+        padding: 18,
     },
     createModalCard: {
+        borderRadius: 24,
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingHorizontal: 18,
-        paddingTop: 18,
-        paddingBottom: 28,
+        padding: 18,
     },
     createModalHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 14,
+        marginBottom: 16,
     },
     createModalTitle: {fontSize: 20, fontWeight: '800', color: '#111827'},
     createInput: {
+        minHeight: 48,
+        borderRadius: 14,
         borderWidth: 1,
         borderColor: '#D1D5DB',
-        borderRadius: 16,
-        paddingHorizontal: 16,
-        paddingVertical: 13,
+        paddingHorizontal: 14,
         fontSize: 15,
         color: '#111827',
-        backgroundColor: '#FFFFFF',
-        marginBottom: 10,
+        marginBottom: 8,
     },
-    createInputError: {borderColor: '#B42318'},
-    createTextArea: {minHeight: 110, textAlignVertical: 'top'},
-    fieldError: {marginTop: -2, marginBottom: 10, color: '#B42318', fontSize: 13},
+    createTextArea: {
+        minHeight: 110,
+        textAlignVertical: 'top',
+        paddingTop: 14,
+    },
+    createInputError: {borderColor: '#DC2626'},
+    fieldError: {fontSize: 12, color: '#DC2626', marginBottom: 8},
     primaryButton: {
         minHeight: 48,
-        borderRadius: 16,
+        borderRadius: 14,
         backgroundColor: '#3F7FC4',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 4,
+        marginTop: 8,
     },
     primaryButtonDisabled: {opacity: 0.7},
-    primaryButtonText: {color: '#FFFFFF', fontSize: 15, fontWeight: '700'},
+    primaryButtonText: {fontSize: 15, fontWeight: '700', color: '#FFFFFF'},
 });
