@@ -258,6 +258,17 @@ export default function BookWashingScreen() {
                   style={styles.sidebarLink}
                   onPress={() => {
                     setIsSidebarOpen(false);
+                    router.push('/chat');
+                  }}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>Chat</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
                     router.push('/profile');
                   }}
                 >
@@ -407,6 +418,7 @@ export default function BookWashingScreen() {
         </ScrollView>
 
         <BottomNav
+          onChatPress={() => router.push('/chat')}
           active="washing"
           onHomePress={() => router.replace('/home')}
           onWashingPress={() => router.replace('/book-washing')}

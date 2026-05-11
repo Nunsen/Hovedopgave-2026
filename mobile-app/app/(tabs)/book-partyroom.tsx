@@ -246,6 +246,11 @@ export default function BookPartyRoomScreen() {
                 </Pressable>
 
                 <Pressable style={styles.sidebarLink} onPress={() => { setIsSidebarOpen(false); router.push('/profile'); }}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>Chat</Text>
+                </Pressable>
+
+                <Pressable style={styles.sidebarLink} onPress={() => { setIsSidebarOpen(false); router.push('/profile'); }}>
                   <Ionicons name="person-outline" size={20} color="#111827" />
                   <Text style={styles.sidebarLinkText}>Profil</Text>
                 </Pressable>
@@ -399,6 +404,7 @@ export default function BookPartyRoomScreen() {
         </ScrollView>
 
         <BottomNav
+          onChatPress={() => router.push('/chat')}
           active="party"
           onHomePress={() => router.replace('/home')}
           onWashingPress={() => router.replace('/book-washing')}

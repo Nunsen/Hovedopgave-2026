@@ -505,6 +505,47 @@ export type UserProfileDto = {
     password: string;
 };
 
+export type ChatGroupDto = {
+    groupId: number;
+    name: string;
+    description: string;
+    memberCount: number;
+    joined: boolean;
+    createdByUserId: number | null;
+    createdByName: string;
+    lastMessagePreview: string | null;
+    lastMessageAt: string | null;
+};
+
+export type ChatOverviewDto = {
+    joinedGroups: ChatGroupDto[];
+    availableGroups: ChatGroupDto[];
+};
+
+export type ChatMessageDto = {
+    messageId: number;
+    groupId: number;
+    userId: number;
+    authorName: string;
+    message: string;
+    sentAt: string;
+};
+
+export type CreateChatGroupPayload = {
+    userId: number;
+    name: string;
+    description: string;
+};
+
+export type JoinChatGroupPayload = {
+    userId: number;
+};
+
+export type CreateChatGroupError = {
+    message: string;
+    fieldErrors?: Partial<Record<keyof CreateChatGroupPayload, string>>;
+};
+
 export type UpdateUserProfilePayload = {
     firstName: string;
     lastName: string;
@@ -675,6 +716,111 @@ export async function deleteUserProfile(
         }
 
         return {};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function getChatOverview(
+    userId: number,
+): Promise<{ data?: ChatOverviewDto; error?: string }> {
+    try {
+        const {response, responseBody} = await fetchJson(`/groups?userId=${userId}`, {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke hente chatgrupper.'};
+        }
+
+        return {data: responseBody as ChatOverviewDto};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function getChatMessages(
+    groupId: number,
+    userId: number,
+): Promise<{ data?: ChatMessageDto[]; error?: string }> {
+    try {
+        const {response, responseBody} = await fetchJson(`/groups/${groupId}/messages?userId=${userId}`, {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke hente beskeder.'};
+        }
+
+        return {data: responseBody as ChatMessageDto[]};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function createChatMessage(
+    groupId: number,
+    payload: { userId: number; message: string },
+): Promise<{ data?: ChatMessageDto; error?: string }> {
+    try {
+        const {response, responseBody} = await fetchJson(`/groups/${groupId}/messages`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke sende beskeden.'};
+        }
+
+        return {data: responseBody as ChatMessageDto};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function createChatGroup(
+    payload: CreateChatGroupPayload,
+): Promise<{ data?: ChatGroupDto; error?: CreateChatGroupError }> {
+    try {
+        const {response, responseBody} = await fetchJson('/groups', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            return {error: responseBody as CreateChatGroupError};
+        }
+
+        return {data: responseBody as ChatGroupDto};
+    } catch {
+        return {error: { message: 'Forbindelse til server fejlede.' }};
+    }
+}
+
+export async function joinChatGroup(
+    groupId: number,
+    payload: JoinChatGroupPayload,
+): Promise<{ data?: ChatGroupDto; error?: string }> {
+    try {
+        const {response, responseBody} = await fetchJson(`/groups/${groupId}/join`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke tilmelde gruppen.'};
+        }
+
+        return {data: responseBody as ChatGroupDto};
     } catch {
         return {error: 'Forbindelse til server fejlede.'};
     }

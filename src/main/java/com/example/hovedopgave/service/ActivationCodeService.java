@@ -55,12 +55,9 @@ public class ActivationCodeService {
             );
         }
 
-        //activationCode.setIsUsed(true);
-        activationCode.setUser(user);
         user.setIsActivated(true);
 
         userRepository.save(user);
-        activationCodeRepository.save(activationCode);
 
         return new ActivationCodeResponse(
                 user.getUserId(),

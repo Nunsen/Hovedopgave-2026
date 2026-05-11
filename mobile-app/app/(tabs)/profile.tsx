@@ -101,6 +101,7 @@ const emptyForm: UpdateUserProfilePayload = {
 export default function ProfileScreen() {
   const router = useRouter();
   const { isLoading, logout, updateUser, user } = useAuth();
+
   const [profile, setProfile] = useState<UserProfileDto | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -122,6 +123,7 @@ export default function ProfileScreen() {
     }
 
     setLoadingProfile(true);
+
     const result = await getUserProfile(user.userId);
 
     if (result.error) {
@@ -153,7 +155,9 @@ export default function ProfileScreen() {
       {
         icon: 'calendar-outline' as const,
         label: 'Fødselsdato',
-        value: profile.birthDate ? new Date(profile.birthDate).toLocaleDateString('da-DK') : '-',
+        value: profile.birthDate
+            ? new Date(profile.birthDate).toLocaleDateString('da-DK')
+            : '-',
       },
       {
         icon: 'business-outline' as const,
@@ -243,6 +247,7 @@ export default function ProfileScreen() {
     }
 
     setGeneralError(null);
+
     const nextErrors = validateClientSide();
 
     if (Object.keys(nextErrors).length > 0) {
@@ -390,15 +395,26 @@ export default function ProfileScreen() {
                     <Text style={styles.sidebarLinkText}>Nyt opslag</Text>
                   </Pressable>
 
-                  <Pressable
-                      style={styles.sidebarLink}
-                      onPress={() => {
-                        setIsSidebarOpen(false);
-                        router.replace('/profile');
-                      }}
-                  >
-                    <Ionicons name="person-outline" size={20} color="#111827" />
-                    <Text style={styles.sidebarLinkText}>Profil</Text>
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.push('/chat');
+                  }}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>Chat</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.replace('/profile');
+                  }}
+                >
+                  <Ionicons name="person-outline" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>Profil</Text>
                   </Pressable>
 
                   <Pressable
@@ -565,6 +581,14 @@ export default function ProfileScreen() {
                 <Ionicons name="home-outline" size={14} color="#3F7FC4" />
                 <Text style={styles.heroMetaText}>Lejlighed {profile?.apartmentNumber ?? '-'}</Text>
               </View>
+
+              <Pressable style={styles.editProfileButton} onPress={openEditModal}>
+                <View style={styles.editProfileIconCircle}>
+                  <Ionicons name="create-outline" size={15} color="#3F7FC4" />
+                </View>
+
+                <Text style={styles.editProfileButtonText}>Rediger profil</Text>
+              </Pressable>
             </View>
 
             <View style={styles.section}>
@@ -589,21 +613,17 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <Pressable style={styles.editProfileButton} onPress={openEditModal}>
-              <Ionicons name="create-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.editProfileButtonText}>Rediger profil</Text>
-            </Pressable>
-
             <Pressable style={styles.deleteProfileButton} onPress={confirmDeleteProfile}>
               <Ionicons name="trash-outline" size={18} color="#B42318" />
               <Text style={styles.deleteProfileButtonText}>Slet profil</Text>
             </Pressable>
           </ScrollView>
 
-          <BottomNav
-              active="profile"
-              onHomePress={() => router.replace('/home')}
-              onWashingPress={() => router.push('/book-washing')}
+        <BottomNav
+          active="profile"
+          onChatPress={() => router.push('/chat')}
+          onHomePress={() => router.replace('/home')}
+          onWashingPress={() => router.push('/book-washing')}
               onPartyPress={() => router.push('/book-partyroom')}
               onProfilePress={() => router.replace('/profile')}
           />
@@ -827,20 +847,36 @@ const styles = StyleSheet.create({
     color: '#3F7FC4',
   },
   editProfileButton: {
-    minHeight: 50,
-    borderRadius: 16,
-    backgroundColor: '#3F7FC4',
+    marginTop: 16,
+    minHeight: 46,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 4,
-    marginBottom: 10,
+    shadowColor: '#1F2937',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  editProfileIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editProfileButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#3F7FC4',
   },
   section: {
     marginBottom: 20,

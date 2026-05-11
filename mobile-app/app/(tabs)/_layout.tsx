@@ -14,6 +14,7 @@ export default function AuthLayout() {
       <Stack.Screen name="home" options={{ headerShown: false }} />
       <Stack.Screen name="book-washing" options={{ headerShown: false }} />
       <Stack.Screen name="book-partyroom" options={{ headerShown: false }} />
+      <Stack.Screen name="chat" options={{ headerShown: false }} />
       <Stack.Screen name="my-bookings" options={{ headerShown: false }} />
       <Stack.Screen name="new-post" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />

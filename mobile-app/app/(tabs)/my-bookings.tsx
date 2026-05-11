@@ -143,6 +143,7 @@ export default function MyBookingsScreen() {
         </ScrollView>
 
         <BottomNav
+          onChatPress={() => router.push('/chat')}
           active="washing"
           onHomePress={() => router.replace('/home')}
           onWashingPress={() => router.replace('/book-washing')}

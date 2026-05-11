@@ -72,6 +72,7 @@ type PostFormScreenProps = {
   onSubmit: (form: PostForm) => Promise<{ fieldErrors?: PostFieldErrors; message?: string } | void>;
   onBack: () => void;
   onHomePress?: () => void;
+  onChatPress?: () => void;
   onWashingPress?: () => void;
   onPartyPress?: () => void;
   onProfilePress?: () => void;
@@ -89,6 +90,7 @@ export function PostFormScreen({
   onSubmit,
   onBack,
   onHomePress,
+  onChatPress,
   onWashingPress,
   onPartyPress,
   onProfilePress,
@@ -343,7 +345,8 @@ export function PostFormScreen({
         </ScrollView>
 
         <BottomNav
-          active="chat"
+          active="home"
+          onChatPress={onChatPress}
           onHomePress={onHomePress ?? onBack}
           onWashingPress={onWashingPress}
           onPartyPress={onPartyPress}

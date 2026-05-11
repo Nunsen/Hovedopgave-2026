@@ -157,6 +157,17 @@ export default function HomeScreen() {
                       style={styles.sidebarLink}
                       onPress={() => {
                         setIsSidebarOpen(false);
+                        router.push('/chat');
+                      }}
+                  >
+                    <Ionicons name="chatbubble-ellipses-outline" size={20} color="#111827" />
+                    <Text style={styles.sidebarLinkText}>Chat</Text>
+                  </Pressable>
+
+                  <Pressable
+                      style={styles.sidebarLink}
+                      onPress={() => {
+                        setIsSidebarOpen(false);
                         router.push('/profile');
                       }}
                   >
@@ -321,6 +332,7 @@ export default function HomeScreen() {
           </Pressable>
 
           <BottomNav
+              onChatPress={() => router.push('/chat')}
               active="home"
               onHomePress={() => router.replace('/home')}
               onWashingPress={() => router.push('/book-washing')}

@@ -2,12 +2,18 @@ package com.example.hovedopgave.config;
 
 import com.example.hovedopgave.model.ActivationCode;
 import com.example.hovedopgave.model.Booking;
+import com.example.hovedopgave.model.CommunityGroup;
 import com.example.hovedopgave.model.Facility;
+import com.example.hovedopgave.model.GroupMember;
+import com.example.hovedopgave.model.GroupMessage;
 import com.example.hovedopgave.model.Post;
 import com.example.hovedopgave.model.User;
 import com.example.hovedopgave.repository.ActivationCodeRepository;
 import com.example.hovedopgave.repository.BookingRepository;
+import com.example.hovedopgave.repository.CommunityGroupRepository;
 import com.example.hovedopgave.repository.FacilityRepository;
+import com.example.hovedopgave.repository.GroupMemberRepository;
+import com.example.hovedopgave.repository.GroupMessageRepository;
 import com.example.hovedopgave.repository.PostRepository;
 import com.example.hovedopgave.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -37,7 +43,10 @@ public class DummyData {
             UserRepository userRepository,
             PostRepository postRepository,
             FacilityRepository facilityRepository,
-            BookingRepository bookingRepository
+            BookingRepository bookingRepository,
+            CommunityGroupRepository communityGroupRepository,
+            GroupMemberRepository groupMemberRepository,
+            GroupMessageRepository groupMessageRepository
     ) {
         return args -> {
 
@@ -48,13 +57,32 @@ public class DummyData {
 
             User user = firstUser.get();
 
-            if (activationCodeRepository.findByCodeIgnoreCase("HOVEDOPGAVE-QR-2026").isEmpty()) {
+            Optional<ActivationCode> sharedActivationCode = activationCodeRepository.findByCodeIgnoreCase("HOVEDOPGAVE-QR-2026");
+
+            if (sharedActivationCode.isEmpty()) {
                 ActivationCode activationCode = new ActivationCode();
                 activationCode.setCode("HOVEDOPGAVE-QR-2026");
-                //activationCode.setIsUsed(false);
+                activationCode.setIsUsed(false);
                 activationCode.setExpirationDate(LocalDateTime.now().plusYears(10));
                 activationCode.setUser(user);
                 activationCodeRepository.save(activationCode);
+            } else {
+                ActivationCode activationCode = sharedActivationCode.get();
+                boolean hasChanges = false;
+
+                if (activationCode.getUser() == null) {
+                    activationCode.setUser(user);
+                    hasChanges = true;
+                }
+
+                if (activationCode.getIsUsed() == null) {
+                    activationCode.setIsUsed(false);
+                    hasChanges = true;
+                }
+
+                if (hasChanges) {
+                    activationCodeRepository.save(activationCode);
+                }
             }
 
             if (postRepository.count() == 0) {
@@ -126,7 +154,46 @@ public class DummyData {
 
             resetBookingsOnce(bookingRepository);
             normalizeFacilities(facilityRepository, bookingRepository);
+            seedChatGroups(user, communityGroupRepository, groupMemberRepository, groupMessageRepository);
         };
+    }
+
+    private void seedChatGroups(
+            User user,
+            CommunityGroupRepository communityGroupRepository,
+            GroupMemberRepository groupMemberRepository,
+            GroupMessageRepository groupMessageRepository
+    ) {
+        if (!communityGroupRepository.findAllByTypeIgnoreCaseOrderByCreatedAtDesc("CHAT").isEmpty()) {
+            return;
+        }
+
+        CommunityGroup firstGroup = createGroup(
+                communityGroupRepository,
+                user,
+                "Gang gruppe",
+                "Faelles beskeder til naboer paa samme gang."
+        );
+        CommunityGroup secondGroup = createGroup(
+                communityGroupRepository,
+                user,
+                "Stueetagen",
+                "Koordinering mellem beboere i stueetagen."
+        );
+        CommunityGroup thirdGroup = createGroup(
+                communityGroupRepository,
+                user,
+                "Beboerforening",
+                "Praktiske beskeder og initiativer for alle beboere."
+        );
+
+        joinGroup(groupMemberRepository, firstGroup, user, "OWNER");
+        joinGroup(groupMemberRepository, secondGroup, user, "OWNER");
+        joinGroup(groupMemberRepository, thirdGroup, user, "OWNER");
+
+        createGroupMessage(groupMessageRepository, firstGroup, user, "Velkommen til gruppen for gangen.");
+        createGroupMessage(groupMessageRepository, secondGroup, user, "Her kan I koordinere praktiske ting.");
+        createGroupMessage(groupMessageRepository, thirdGroup, user, "Brug gruppen til faelles information og dialog.");
     }
 
     private void resetBookingsOnce(BookingRepository bookingRepository) {
@@ -268,5 +335,48 @@ public class DummyData {
         post.setLocation(location);
         post.setCreatedAt(createdAt);
         return post;
+    }
+
+    private CommunityGroup createGroup(
+            CommunityGroupRepository communityGroupRepository,
+            User user,
+            String name,
+            String description
+    ) {
+        CommunityGroup group = new CommunityGroup();
+        group.setName(name);
+        group.setDescription(description);
+        group.setType("CHAT");
+        group.setCreatedBy(user);
+        group.setCreatedAt(LocalDateTime.now().minusDays(2));
+        return communityGroupRepository.save(group);
+    }
+
+    private void joinGroup(
+            GroupMemberRepository groupMemberRepository,
+            CommunityGroup group,
+            User user,
+            String role
+    ) {
+        GroupMember groupMember = new GroupMember();
+        groupMember.setGroup(group);
+        groupMember.setUser(user);
+        groupMember.setRoleInGroup(role);
+        groupMember.setJoinedAt(LocalDateTime.now().minusDays(2));
+        groupMemberRepository.save(groupMember);
+    }
+
+    private void createGroupMessage(
+            GroupMessageRepository groupMessageRepository,
+            CommunityGroup group,
+            User user,
+            String messageValue
+    ) {
+        GroupMessage message = new GroupMessage();
+        message.setGroup(group);
+        message.setUser(user);
+        message.setMessage(messageValue);
+        message.setSentAt(LocalDateTime.now().minusDays(1));
+        groupMessageRepository.save(message);
     }
 }

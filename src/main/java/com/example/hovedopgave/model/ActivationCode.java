@@ -29,6 +29,9 @@ public class ActivationCode {
     @Column(nullable = false, unique = true)
     private String code;
 
+    @Column(name = "is_used", nullable = false)
+    private Boolean isUsed;
+
     @Column(name = "expiration_date", nullable = false)
     private LocalDateTime expirationDate;
 
