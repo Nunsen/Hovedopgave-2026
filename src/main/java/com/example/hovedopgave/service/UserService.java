@@ -2,6 +2,7 @@ package com.example.hovedopgave.service;
 
 import com.example.hovedopgave.dto.UserRegistrationRequest;
 import com.example.hovedopgave.dto.UserRegistrationResponse;
+import com.example.hovedopgave.dto.ChatUserSearchResponse;
 import com.example.hovedopgave.dto.UserLoginRequest;
 import com.example.hovedopgave.dto.UserLoginResponse;
 import com.example.hovedopgave.dto.UserProfileResponse;
@@ -28,7 +29,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -125,6 +129,24 @@ public class UserService {
                 user.getRole(),
                 "Login gennemfoert."
         );
+    }
+
+    public List<ChatUserSearchResponse> searchChatUsers(Integer userId, String query) {
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new UserValidationException(
+                        "Brugeren findes ikke.",
+                        Map.of("userId", "Der findes ingen bruger med dette id.")
+                ));
+
+        String normalizedQuery = normalize(query);
+        String searchValue = normalizedQuery == null ? null : normalizedQuery.toLowerCase(Locale.ROOT);
+
+        return userRepository.findAllByOrderByFirstNameAscLastNameAsc().stream()
+                .filter(candidate -> !candidate.getUserId().equals(currentUser.getUserId()))
+                .filter(candidate -> matchesChatSearch(candidate, searchValue))
+                .sorted(Comparator.comparing(this::toFullName, String.CASE_INSENSITIVE_ORDER))
+                .map(this::toChatUserSearchResponse)
+                .toList();
     }
 
     public UserResetPasswordResponse resetPassword(UserResetPasswordRequest request) {
@@ -444,6 +466,41 @@ public class UserService {
                 user.getApartmentNumber(),
                 "********"
         );
+    }
+
+    private boolean matchesChatSearch(User user, String searchValue) {
+        if (searchValue == null) {
+            return true;
+        }
+
+        return toFullName(user).toLowerCase(Locale.ROOT).contains(searchValue)
+                || (user.getEmail() != null && user.getEmail().toLowerCase(Locale.ROOT).contains(searchValue))
+                || (user.getApartmentNumber() != null
+                && user.getApartmentNumber().toLowerCase(Locale.ROOT).contains(searchValue));
+    }
+
+    private ChatUserSearchResponse toChatUserSearchResponse(User user) {
+        return new ChatUserSearchResponse(
+                user.getUserId(),
+                toFullName(user),
+                toRoleLabel(user.getRole())
+        );
+    }
+
+    private String toFullName(User user) {
+        return (user.getFirstName() + " " + user.getLastName()).trim();
+    }
+
+    private String toRoleLabel(String role) {
+        if (role == null) {
+            return "Beboer";
+        }
+
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            return "Administrator";
+        }
+
+        return "Beboer";
     }
 
     private String hashPassword(String password) {

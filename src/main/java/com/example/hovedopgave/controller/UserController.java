@@ -2,6 +2,7 @@ package com.example.hovedopgave.controller;
 
 import com.example.hovedopgave.dto.UserRegistrationRequest;
 import com.example.hovedopgave.dto.UserRegistrationResponse;
+import com.example.hovedopgave.dto.ChatUserSearchResponse;
 import com.example.hovedopgave.dto.UserLoginRequest;
 import com.example.hovedopgave.dto.UserLoginResponse;
 import com.example.hovedopgave.dto.UserProfileResponse;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -41,6 +43,14 @@ public class UserController {
     @GetMapping
     public List<User> getUsers() {
         return userRepository.findAll();
+    }
+
+    @GetMapping("/chat-search")
+    public List<ChatUserSearchResponse> searchChatUsers(
+            @RequestParam Integer userId,
+            @RequestParam(required = false) String query
+    ) {
+        return userService.searchChatUsers(userId, query);
     }
 
     @GetMapping("/{userId}/profile")

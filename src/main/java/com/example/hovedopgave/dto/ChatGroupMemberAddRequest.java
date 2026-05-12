@@ -2,10 +2,8 @@ package com.example.hovedopgave.dto;
 
 import java.util.List;
 
-public record ChatGroupCreateRequest(
+public record ChatGroupMemberAddRequest(
         Integer userId,
-        String name,
-        String description,
         List<Integer> memberUserIds
 ) {
 }

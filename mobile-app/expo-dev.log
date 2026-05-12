@@ -1,0 +1,16 @@
+
+> mobile-app@1.0.0 start
+> expo start --port 8082
+
+Starting project at C:\Users\sommer\IdeaProjects\Hovedopgave\mobile-app
+React Compiler enabled
+Starting Metro Bundler
+The following packages should be updated for best compatibility with the installed expo version:
+  expo@54.0.33 - expected version: ~54.0.34
+  expo-device@55.0.15 - expected version: ~8.0.10
+  expo-linking@8.0.11 - expected version: ~8.0.12
+  expo-notifications@55.0.22 - expected version: ~0.32.17
+  expo-web-browser@15.0.10 - expected version: ~15.0.11
+Your project may not work correctly until you install the expected versions of the packages.
+Waiting on http://localhost:8082
+Logs for your project will appear below.

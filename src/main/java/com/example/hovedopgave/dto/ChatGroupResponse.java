@@ -4,6 +4,8 @@ public record ChatGroupResponse(
         Integer groupId,
         String name,
         String description,
+        String groupType,
+        Integer counterpartUserId,
         Integer memberCount,
         boolean joined,
         Integer createdByUserId,

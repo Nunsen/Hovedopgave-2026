@@ -44,4 +44,10 @@ public class GroupMember {
 
     @Column(name = "joined_at", nullable = false)
     private LocalDateTime joinedAt;
+
+    @Column(name = "is_hidden", nullable = false)
+    private Boolean isHidden = false;
+
+    @Column(name = "hidden_at")
+    private LocalDateTime hiddenAt;
 }

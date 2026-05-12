@@ -9,6 +9,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,8 +31,11 @@ public class CommunityGroup {
     @Column(name = "group_id")
     private Integer groupId;
 
-    @Column(nullable = false)
-    private String name;
+    @Column(name = "group_name")
+    private String groupName;
+
+    @Column(name = "name")
+    private String legacyName;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -56,4 +61,25 @@ public class CommunityGroup {
     @OneToMany(mappedBy = "group")
     @JsonIgnoreProperties({"group", "user"})
     private List<GroupMessage> messages = new ArrayList<>();
+
+    public String getName() {
+        return groupName != null ? groupName : legacyName;
+    }
+
+    public void setName(String name) {
+        this.groupName = name;
+        this.legacyName = name;
+    }
+
+    @PrePersist
+    @PreUpdate
+    void syncGroupNameColumns() {
+        if (groupName == null && legacyName != null) {
+            groupName = legacyName;
+        }
+
+        if (legacyName == null && groupName != null) {
+            legacyName = groupName;
+        }
+    }
 }

@@ -1,7 +1,10 @@
 package com.example.hovedopgave.controller;
 
 import com.example.hovedopgave.dto.ChatGroupCreateRequest;
+import com.example.hovedopgave.dto.ChatDirectConversationRequest;
+import com.example.hovedopgave.dto.ChatGroupMemberAddRequest;
 import com.example.hovedopgave.dto.ChatGroupJoinRequest;
+import com.example.hovedopgave.dto.ChatGroupDeletedEvent;
 import com.example.hovedopgave.dto.ChatGroupResponse;
 import com.example.hovedopgave.dto.ChatMessageRequest;
 import com.example.hovedopgave.dto.ChatMessageResponse;
@@ -14,6 +17,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -52,6 +56,14 @@ public class GroupController {
         return groupService.getMessages(groupId, userId);
     }
 
+    @GetMapping("/{groupId}")
+    public ChatGroupResponse getGroup(
+            @PathVariable Integer groupId,
+            @RequestParam Integer userId
+    ) {
+        return groupService.getGroupDetails(groupId, userId);
+    }
+
     @PostMapping("/{groupId}/messages")
     public ResponseEntity<ChatMessageResponse> createMessage(
             @PathVariable Integer groupId,
@@ -68,12 +80,57 @@ public class GroupController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PostMapping("/direct")
+    public ResponseEntity<ChatGroupResponse> createDirectConversation(
+            @RequestBody ChatDirectConversationRequest request
+    ) {
+        ChatGroupResponse response = groupService.createDirectConversation(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
     @PostMapping("/{groupId}/join")
     public ResponseEntity<ChatGroupResponse> joinGroup(
             @PathVariable Integer groupId,
             @RequestBody ChatGroupJoinRequest request
     ) {
         ChatGroupResponse response = groupService.joinGroup(groupId, request.userId());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{groupId}/leave")
+    public ResponseEntity<Void> leaveGroup(
+            @PathVariable Integer groupId,
+            @RequestBody ChatGroupJoinRequest request
+    ) {
+        groupService.leaveGroup(groupId, request.userId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{groupId}/delete-for-user")
+    public ResponseEntity<Void> deleteDirectConversationForUser(
+            @PathVariable Integer groupId,
+            @RequestBody ChatGroupJoinRequest request
+    ) {
+        groupService.deleteDirectConversationForUser(groupId, request.userId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<Void> deleteGroup(
+            @PathVariable Integer groupId,
+            @RequestParam Integer userId
+    ) {
+        groupService.deleteGroup(groupId, userId);
+        simpMessagingTemplate.convertAndSend("/topic/groups/" + groupId + "/events", new ChatGroupDeletedEvent(groupId));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{groupId}/members")
+    public ResponseEntity<ChatGroupResponse> addGroupMembers(
+            @PathVariable Integer groupId,
+            @RequestBody ChatGroupMemberAddRequest request
+    ) {
+        ChatGroupResponse response = groupService.addGroupMembers(groupId, request);
         return ResponseEntity.ok(response);
     }
 

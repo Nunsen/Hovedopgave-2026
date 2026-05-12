@@ -29,6 +29,7 @@ const STOMP_HOST = CHAT_WS_URL.replace(/^wss?:\/\//, '').split('/')[0];
 type ChatClientOptions = {
   groupIds: number[];
   onMessage: (message: ChatMessageDto) => void;
+  onGroupDeleted?: (groupId: number) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (message: string) => void;
@@ -37,6 +38,7 @@ type ChatClientOptions = {
 export function createChatClient({
   groupIds,
   onMessage,
+  onGroupDeleted,
   onConnect,
   onDisconnect,
   onError,
@@ -77,6 +79,17 @@ export function createChatClient({
         });
 
         subscriptions.push(subscription);
+
+        logChatEvent('subscribing', { topic: `/topic/groups/${groupId}/events` });
+        const eventSubscription = client.subscribe(`/topic/groups/${groupId}/events`, (frame: IMessage) => {
+          logChatEvent('event-frame', frame.body);
+          const parsedEvent = JSON.parse(frame.body) as { groupId?: number };
+          if (typeof parsedEvent.groupId === 'number') {
+            onGroupDeleted?.(parsedEvent.groupId);
+          }
+        });
+
+        subscriptions.push(eventSubscription);
       });
     },
     onStompError: (frame) => {
