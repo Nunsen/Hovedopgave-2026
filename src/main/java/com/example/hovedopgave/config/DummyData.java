@@ -4,6 +4,7 @@ import com.example.hovedopgave.model.ActivationCode;
 import com.example.hovedopgave.model.Booking;
 import com.example.hovedopgave.model.CommunityGroup;
 import com.example.hovedopgave.model.Facility;
+import com.example.hovedopgave.model.Faq;
 import com.example.hovedopgave.model.GroupMember;
 import com.example.hovedopgave.model.GroupMessage;
 import com.example.hovedopgave.model.Post;
@@ -12,6 +13,7 @@ import com.example.hovedopgave.repository.ActivationCodeRepository;
 import com.example.hovedopgave.repository.BookingRepository;
 import com.example.hovedopgave.repository.CommunityGroupRepository;
 import com.example.hovedopgave.repository.FacilityRepository;
+import com.example.hovedopgave.repository.FaqRepository;
 import com.example.hovedopgave.repository.GroupMemberRepository;
 import com.example.hovedopgave.repository.GroupMessageRepository;
 import com.example.hovedopgave.repository.PostRepository;
@@ -43,6 +45,7 @@ public class DummyData {
             UserRepository userRepository,
             PostRepository postRepository,
             FacilityRepository facilityRepository,
+            FaqRepository faqRepository,
             BookingRepository bookingRepository,
             CommunityGroupRepository communityGroupRepository,
             GroupMemberRepository groupMemberRepository,
@@ -152,10 +155,77 @@ public class DummyData {
                 ));
             }
 
+            seedFaqs(faqRepository);
             resetBookingsOnce(bookingRepository);
             normalizeFacilities(facilityRepository, bookingRepository);
             seedChatGroups(user, communityGroupRepository, groupMemberRepository, groupMessageRepository);
         };
+    }
+
+    private void seedFaqs(FaqRepository faqRepository) {
+        List<Faq> existingFaqs = faqRepository.findAll();
+
+        for (Faq existingFaq : existingFaqs) {
+            if (existingFaq.getKind() == null || existingFaq.getKind().isBlank()) {
+                existingFaq.setKind("FAQ");
+            }
+
+            if (existingFaq.getCreatedAt() == null) {
+                existingFaq.setCreatedAt(LocalDateTime.now().minusDays(10));
+            }
+        }
+
+        if (!existingFaqs.isEmpty()) {
+            faqRepository.saveAll(existingFaqs);
+        }
+
+        boolean hasFaqContent = existingFaqs.stream()
+                .anyMatch(faq -> "FAQ".equalsIgnoreCase(faq.getKind()));
+
+        if (hasFaqContent) {
+            return;
+        }
+
+        faqRepository.save(createFaq(
+                "Hvordan booker jeg vaskemaskinen?",
+                "Gå til vaskeri, vælg dato og tryk på en ledig tid.",
+                "Booking og app-funktioner"
+        ));
+        faqRepository.save(createFaq(
+                "Hvad gør jeg hvis appen fejler?",
+                "Prøv igen. Hvis problemet fortsætter, opret en henvendelse under FAQ.",
+                "Tekniske problemer"
+        ));
+        faqRepository.save(createFaq(
+                "Hvordan rapporterer jeg et problem med en maskine?",
+                "Åbn FAQ og vælg Opret henvendelse under Facilitetsproblemer.",
+                "Facilitetsproblemer"
+        ));
+        faqRepository.save(createFaq(
+                "Hvad gør jeg ved støj eller dårlig adfærd?",
+                "Du kan oprette en henvendelse under Støj og adfærd, hvis problemet fortsætter.",
+                "Støj og adfærd"
+        ));
+        faqRepository.save(createFaq(
+                "Hvordan sender jeg forslag til forbedringer?",
+                "Brug kategorien Forslag og feedback i henvendelsesformularen.",
+                "Forslag og feedback"
+        ));
+        faqRepository.save(createFaq(
+                "Hvad gør jeg ved akutte problemer?",
+                "Opret en henvendelse med kategorien Akutte problemer så hurtigt som muligt.",
+                "Akutte problemer"
+        ));
+    }
+
+    private Faq createFaq(String question, String answer, String category) {
+        Faq faq = new Faq();
+        faq.setQuestion(question);
+        faq.setAnswer(answer);
+        faq.setCategory(category);
+        faq.setKind("FAQ");
+        faq.setCreatedAt(LocalDateTime.now().minusDays(7));
+        return faq;
     }
 
     private void seedChatGroups(

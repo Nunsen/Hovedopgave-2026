@@ -20,20 +20,31 @@ import {
   DashboardBookingDto,
   DashboardDto,
   DashboardFacilityDto,
-  DashboardFaqDto,
+  DashboardFaqRequestDto,
   DashboardGroupDto,
   DashboardPostDto,
+  createDirectChat,
   deleteBooking,
   deletePost,
   deleteUserProfile,
   getDashboard,
   getUserProfile,
+  updateFaqRequestStatus,
   updateFacilityStatus,
   UserProfileDto,
 } from '@/lib/api';
 
-type AdminSection = 'bookings' | 'posts' | 'groups' | 'problems';
-type AdminView = 'overview' | 'bookings' | 'bookingDetail' | 'users' | 'userDetail' | 'facilities' | 'posts';
+type AdminSection = 'bookings' | 'posts' | 'groups' | 'requests';
+type AdminView =
+  | 'overview'
+  | 'bookings'
+  | 'bookingDetail'
+  | 'users'
+  | 'userDetail'
+  | 'facilities'
+  | 'posts'
+  | 'requests'
+  | 'requestDetail';
 type BookingTab = 'all' | 'washing' | 'party';
 type UserTab = 'all' | 'residents' | 'admins';
 type FacilityTab = 'washing' | 'party';
@@ -66,6 +77,30 @@ function getProblemBadgeColor(category: string) {
   }
 
   return { backgroundColor: '#F2F4F7', textColor: '#344054' };
+}
+
+function isAcuteRequest(request: DashboardFaqRequestDto) {
+  return request.category?.trim().toLowerCase() === 'akutte problemer';
+}
+
+function getRequestStatusColors(status: string | null | undefined) {
+  const normalizedStatus = status?.trim().toUpperCase() ?? '';
+
+  if (normalizedStatus === 'DONE') {
+    return { backgroundColor: '#E8F7EC', textColor: '#166534', label: 'Behandlet' };
+  }
+
+  return { backgroundColor: '#FFF7E5', textColor: '#B54708', label: 'I gang' };
+}
+
+function getRequestResidentLabel(request: DashboardFaqRequestDto) {
+  if (!request.user) {
+    return 'Ukendt bruger';
+  }
+
+  const fullName = `${request.user.firstName} ${request.user.lastName}`.trim();
+  const apartmentNumber = request.user.apartmentNumber?.trim();
+  return apartmentNumber ? `${fullName} (${apartmentNumber})` : fullName;
 }
 
 function getBookingResidentLabel(booking: DashboardBookingDto) {
@@ -150,16 +185,20 @@ export default function AdminScreen() {
   const [activeView, setActiveView] = useState<AdminView>('overview');
   const [bookingTab, setBookingTab] = useState<BookingTab>('all');
   const [bookingSearchText, setBookingSearchText] = useState('');
+  const [requestSearchText, setRequestSearchText] = useState('');
   const [userTab, setUserTab] = useState<UserTab>('all');
   const [userSearchText, setUserSearchText] = useState('');
   const [facilityTab, setFacilityTab] = useState<FacilityTab>('washing');
   const [selectedBooking, setSelectedBooking] = useState<DashboardBookingDto | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<DashboardFaqRequestDto | null>(null);
   const [selectedUserProfile, setSelectedUserProfile] = useState<UserProfileDto | null>(null);
   const [loadingUserProfile, setLoadingUserProfile] = useState(false);
   const [deletingBookingId, setDeletingBookingId] = useState<number | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
   const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
   const [updatingFacilityId, setUpdatingFacilityId] = useState<number | null>(null);
+  const [updatingRequestId, setUpdatingRequestId] = useState<number | null>(null);
+  const [startingChatUserId, setStartingChatUserId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -232,13 +271,21 @@ export default function AdminScreen() {
     [dashboard, expandedSection],
   );
 
-  const recentProblems = useMemo(
+  const sortedRequests = useMemo(
     () =>
-      [...(dashboard?.faqs ?? [])]
-        .slice()
-        .reverse()
-        .slice(0, expandedSection === 'problems' ? 8 : 3),
-    [dashboard, expandedSection],
+      [...(dashboard?.requests ?? [])].sort((left, right) => {
+        if (isAcuteRequest(left) !== isAcuteRequest(right)) {
+          return isAcuteRequest(left) ? -1 : 1;
+        }
+
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      }),
+    [dashboard],
+  );
+
+  const recentRequests = useMemo(
+    () => sortedRequests.slice(0, expandedSection === 'requests' ? 8 : 3),
+    [expandedSection, sortedRequests],
   );
 
   const latestPosts = useMemo(
@@ -365,6 +412,33 @@ export default function AdminScreen() {
     [dashboard],
   );
 
+  const filteredRequests = useMemo(() => {
+    const normalizedSearch = requestSearchText.trim().toLowerCase();
+
+    return sortedRequests.filter((request) => {
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const createdAtLabel = request.createdAt
+        ? new Date(request.createdAt).toLocaleDateString('da-DK')
+        : '';
+      const searchableValues = [
+        request.title ?? '',
+        request.category ?? '',
+        request.description ?? '',
+        request.contactEmail ?? '',
+        request.status ?? '',
+        getRequestResidentLabel(request),
+        createdAtLabel,
+      ];
+
+      return searchableValues.some((value) =>
+        value.toLowerCase().includes(normalizedSearch),
+      );
+    });
+  }, [requestSearchText, sortedRequests]);
+
   const handleOpenUserProfile = useCallback(async (selectedUserId: number) => {
     setLoadingUserProfile(true);
 
@@ -477,6 +551,55 @@ export default function AdminScreen() {
     Alert.alert('Booking slettet', 'Bookingen er fjernet fra oversigten og databasen.');
   }, [loadDashboard, selectedBooking, user]);
 
+  const handleMarkRequestDone = useCallback(async () => {
+    if (!selectedRequest?.faqRequestId) {
+      return;
+    }
+
+    setUpdatingRequestId(selectedRequest.faqRequestId);
+    const result = await updateFaqRequestStatus(selectedRequest.faqRequestId, {
+      status: 'DONE',
+    });
+    setUpdatingRequestId(null);
+
+    if (result.error) {
+      Alert.alert('Kunne ikke opdatere henvendelse', result.error.message);
+      return;
+    }
+
+    await loadDashboard();
+    setSelectedRequest(result.data ?? null);
+    setActiveView('requests');
+    Alert.alert('Henvendelse behandlet', 'Henvendelsen er markeret som behandlet.');
+  }, [loadDashboard, selectedRequest]);
+
+  const handleStartDirectChat = useCallback(async () => {
+    if (!user?.userId || !selectedRequest?.user?.userId) {
+      return;
+    }
+
+    setStartingChatUserId(selectedRequest.user.userId);
+    const result = await createDirectChat({
+      userId: user.userId,
+      targetUserId: selectedRequest.user.userId,
+    });
+    setStartingChatUserId(null);
+
+    if (result.error || !result.data) {
+      Alert.alert('Kunne ikke starte samtale', result.error ?? 'Samtalen kunne ikke oprettes.');
+      return;
+    }
+
+    router.push({
+      pathname: '/chat',
+      params: {
+        tab: 'Samtaler',
+        groupId: String(result.data.groupId),
+        conversation: '1',
+      },
+    });
+  }, [router, selectedRequest, user]);
+
   if (isLoading || loadingDashboard) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -492,7 +615,7 @@ export default function AdminScreen() {
   const usersCount = dashboard?.users.length ?? 0;
   const groupsCount = manageableGroups.length;
   const postsCount = dashboard?.posts.length ?? 0;
-  const problemsCount = dashboard?.faqs.length ?? 0;
+  const requestsCount = dashboard?.requests.length ?? 0;
 
   const handleToggleSection = (section: AdminSection) => {
     setExpandedSection((currentSection) => (currentSection === section ? null : section));
@@ -505,7 +628,6 @@ export default function AdminScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.welcomeText}>Velkommen tilbage, {user.fullName.split(' ')[0]}</Text>
-
       <View style={styles.statsGrid}>
         <Pressable style={styles.statCard} onPress={() => handleToggleSection('bookings')}>
           <View style={styles.statTopRow}>
@@ -514,7 +636,6 @@ export default function AdminScreen() {
           </View>
           <Text style={styles.statLabel}>Aktive bookinger</Text>
         </Pressable>
-
         <Pressable style={styles.statCard} onPress={() => handleToggleSection('bookings')}>
           <View style={styles.statTopRow}>
             <Text style={styles.statValue}>{upcomingPartyBookings.length}</Text>
@@ -522,7 +643,6 @@ export default function AdminScreen() {
           </View>
           <Text style={styles.statLabel}>Kommende festsalsbookinger</Text>
         </Pressable>
-
         <Pressable style={styles.statCard} onPress={() => handleToggleSection('groups')}>
           <View style={styles.statTopRow}>
             <Text style={styles.statValue}>{usersCount}</Text>
@@ -530,7 +650,6 @@ export default function AdminScreen() {
           </View>
           <Text style={styles.statLabel}>Brugere</Text>
         </Pressable>
-
         <Pressable style={styles.statCard} onPress={() => handleToggleSection('groups')}>
           <View style={styles.statTopRow}>
             <Text style={styles.statValue}>{groupsCount}</Text>
@@ -538,15 +657,13 @@ export default function AdminScreen() {
           </View>
           <Text style={styles.statLabel}>Grupper / chats</Text>
         </Pressable>
-
-        <Pressable style={styles.statCard} onPress={() => handleToggleSection('problems')}>
+        <Pressable style={styles.statCard} onPress={() => handleToggleSection('requests')}>
           <View style={styles.statTopRow}>
-            <Text style={styles.statValue}>{problemsCount}</Text>
+            <Text style={styles.statValue}>{requestsCount}</Text>
             <Ionicons name="warning-outline" size={18} color="#475467" />
           </View>
-          <Text style={styles.statLabel}>Rapporterede problemer</Text>
+          <Text style={styles.statLabel}>Henvendelser</Text>
         </Pressable>
-
         <Pressable style={styles.statCard} onPress={() => handleToggleSection('posts')}>
           <View style={styles.statTopRow}>
             <Text style={styles.statValue}>{postsCount}</Text>
@@ -555,13 +672,11 @@ export default function AdminScreen() {
           <Text style={styles.statLabel}>Opslag</Text>
         </Pressable>
       </View>
-
       <SectionHeader
         title="Seneste bookinger"
-        actionLabel={expandedSection === 'bookings' ? 'Vis færre' : 'Se alle'}
+        actionLabel={expandedSection === 'bookings' ? 'Vis f?rre' : 'Se alle'}
         onPress={() => handleToggleSection('bookings')}
       />
-
       {recentBookings.length === 0 ? (
         <Text style={styles.emptyText}>Ingen bookinger fundet.</Text>
       ) : (
@@ -578,7 +693,6 @@ export default function AdminScreen() {
                   : 'Ukendt bruger'}
               </Text>
             </View>
-
             <View style={styles.statusPill}>
               <Text style={styles.statusPillText}>
                 {booking.status?.trim() || 'Ukendt'}
@@ -587,29 +701,32 @@ export default function AdminScreen() {
           </View>
         ))
       )}
-
       <SectionHeader
-        title="Rapporterede problemer"
-        actionLabel={expandedSection === 'problems' ? 'Vis færre' : 'Se alle'}
-        onPress={() => handleToggleSection('problems')}
+        title="Henvendelser"
+        actionLabel={expandedSection === 'requests' ? 'Vis f?rre' : 'Se alle'}
+        onPress={() => handleToggleSection('requests')}
       />
-
-      {recentProblems.length === 0 ? (
-        <Text style={styles.emptyText}>Ingen rapporterede problemer endnu.</Text>
+      {recentRequests.length === 0 ? (
+        <Text style={styles.emptyText}>Ingen henvendelser endnu.</Text>
       ) : (
-        recentProblems.map((problem: DashboardFaqDto) => {
-          const badgeColors = getProblemBadgeColor(problem.category);
-
+        recentRequests.map((request) => {
+          const badgeColors = getProblemBadgeColor(request.category);
           return (
-            <View key={problem.faqId} style={styles.listCard}>
+            <Pressable
+              key={request.faqRequestId}
+              style={styles.listCard}
+              onPress={() => {
+                setSelectedRequest(request);
+                setActiveView('requestDetail');
+              }}
+            >
               <View style={styles.listMain}>
-                <Text style={styles.listTitle}>{problem.question}</Text>
+                <Text style={styles.listTitle}>{request.title}</Text>
                 <Text style={styles.listSubtitle} numberOfLines={2}>
-                  {problem.answer}
+                  {request.description}
                 </Text>
-                <Text style={styles.listMeta}>Rapporteret via FAQ</Text>
+                <Text style={styles.listMeta}>{getRequestResidentLabel(request)}</Text>
               </View>
-
               <View
                 style={[
                   styles.problemBadge,
@@ -617,20 +734,18 @@ export default function AdminScreen() {
                 ]}
               >
                 <Text style={[styles.problemBadgeText, { color: badgeColors.textColor }]}>
-                  {problem.category}
+                  {request.category}
                 </Text>
               </View>
-            </View>
+            </Pressable>
           );
         })
       )}
-
       <SectionHeader
         title="Opslag"
-        actionLabel={expandedSection === 'posts' ? 'Vis færre' : 'Se alle'}
+        actionLabel={expandedSection === 'posts' ? 'Vis f?rre' : 'Se alle'}
         onPress={() => handleToggleSection('posts')}
       />
-
       {latestPosts.length === 0 ? (
         <Text style={styles.emptyText}>Ingen opslag fundet.</Text>
       ) : (
@@ -643,20 +758,15 @@ export default function AdminScreen() {
               </Text>
               <Text style={styles.listMeta}>{post.category}</Text>
             </View>
-
-            {post.isImportant ? (
-              <Ionicons name="bookmark" size={18} color="#3F7FC4" />
-            ) : null}
+            {post.isImportant ? <Ionicons name="bookmark" size={18} color="#3F7FC4" /> : null}
           </View>
         ))
       )}
-
       <SectionHeader
         title="Grupper"
-        actionLabel={expandedSection === 'groups' ? 'Vis færre' : 'Se alle'}
+        actionLabel={expandedSection === 'groups' ? 'Vis f?rre' : 'Se alle'}
         onPress={() => handleToggleSection('groups')}
       />
-
       {groups.length === 0 ? (
         <Text style={styles.emptyText}>Ingen grupper fundet.</Text>
       ) : (
@@ -674,7 +784,6 @@ export default function AdminScreen() {
       )}
     </ScrollView>
   );
-
   const renderBookingsView = () => (
     <View style={styles.bookingsView}>
       <View style={styles.bookingTabsRow}>
@@ -906,6 +1015,219 @@ export default function AdminScreen() {
     );
   };
 
+  const renderRequestsView = () => (
+    <View style={styles.bookingsView}>
+      <View style={styles.bookingsFilters}>
+        <View style={styles.searchField}>
+          <Feather name="search" size={18} color="#98A2B3" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="S?g efter kategori, bruger eller dato..."
+            placeholderTextColor="#98A2B3"
+            value={requestSearchText}
+            onChangeText={setRequestSearchText}
+          />
+        </View>
+      </View>
+      <ScrollView
+        style={styles.bookingsList}
+        contentContainerStyle={styles.bookingsListContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {filteredRequests.length === 0 ? (
+          <Text style={styles.emptyText}>Ingen henvendelser matcher s?gningen.</Text>
+        ) : (
+          filteredRequests.map((request) => {
+            const statusColors = getRequestStatusColors(request.status);
+            const badgeColors = getProblemBadgeColor(request.category);
+            const createdAtLabel = request.createdAt
+              ? new Date(request.createdAt).toLocaleDateString('da-DK')
+              : 'Ukendt dato';
+            return (
+              <Pressable
+                key={request.faqRequestId}
+                style={styles.bookingOverviewCard}
+                onPress={() => {
+                  setSelectedRequest(request);
+                  setActiveView('requestDetail');
+                }}
+              >
+                <View style={styles.bookingOverviewMain}>
+                  <View style={styles.requestCardTop}>
+                    <Text style={styles.bookingOverviewTitle}>{request.title}</Text>
+                    <View
+                      style={[
+                        styles.problemBadge,
+                        { backgroundColor: badgeColors.backgroundColor },
+                      ]}
+                    >
+                      <Text style={[styles.problemBadgeText, { color: badgeColors.textColor }]}>
+                        {request.category}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.bookingOverviewResident}>{getRequestResidentLabel(request)}</Text>
+                  <Text style={styles.bookingOverviewMeta}>{createdAtLabel}</Text>
+                </View>
+                <View style={styles.bookingOverviewSide}>
+                  <View
+                    style={[
+                      styles.bookingOverviewStatus,
+                      { backgroundColor: statusColors.backgroundColor },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.bookingOverviewStatusText,
+                        { color: statusColors.textColor },
+                      ]}
+                    >
+                      {statusColors.label}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#98A2B3" />
+                </View>
+              </Pressable>
+            );
+          })
+        )}
+      </ScrollView>
+    </View>
+  );
+  const renderRequestDetailView = () => {
+    if (!selectedRequest) {
+      return null;
+    }
+    const statusColors = getRequestStatusColors(selectedRequest.status);
+    const createdAt = selectedRequest.createdAt
+      ? new Date(selectedRequest.createdAt).toLocaleString('da-DK', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : 'Ukendt';
+    return (
+      <ScrollView
+        style={styles.bookingDetailScroll}
+        contentContainerStyle={styles.bookingDetailContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.bookingDetailHero}>
+          <View
+            style={[
+              styles.bookingDetailStatus,
+              { backgroundColor: statusColors.backgroundColor },
+            ]}
+          >
+            <Text
+              style={[
+                styles.bookingDetailStatusText,
+                { color: statusColors.textColor },
+              ]}
+            >
+              {statusColors.label}
+            </Text>
+          </View>
+          <View style={styles.bookingDetailIconWrap}>
+            <Ionicons name="document-text-outline" size={38} color="#667085" />
+          </View>
+          <Text style={styles.bookingDetailTitle}>{selectedRequest.title}</Text>
+          <Text style={styles.bookingDetailSubtitle}>{selectedRequest.category}</Text>
+        </View>
+        <Text style={styles.bookingDetailSectionTitle}>Bruger</Text>
+        <View style={styles.bookingDetailCard}>
+          <View style={styles.bookingDetailUserRow}>
+            <View style={styles.bookingDetailAvatar}>
+              <Ionicons name="person" size={20} color="#667085" />
+            </View>
+            <View style={styles.bookingDetailUserInfo}>
+              <Text style={styles.bookingDetailUserName}>{getRequestResidentLabel(selectedRequest)}</Text>
+              <Text style={styles.bookingDetailUserEmail}>
+                {selectedRequest.contactEmail || selectedRequest.user?.email || 'Ingen email'}
+              </Text>
+            </View>
+            <Pressable
+              style={styles.requestChatButton}
+              disabled={!selectedRequest.user?.userId || startingChatUserId === selectedRequest.user?.userId}
+              onPress={() => {
+                void handleStartDirectChat();
+              }}
+            >
+              <Ionicons
+                name={startingChatUserId === selectedRequest.user?.userId ? 'hourglass-outline' : 'chatbubble-ellipses-outline'}
+                size={18}
+                color="#1D4ED8"
+              />
+            </Pressable>
+          </View>
+        </View>
+        <Text style={styles.bookingDetailSectionTitle}>Information</Text>
+        <View style={styles.bookingDetailCard}>
+          <View style={styles.bookingDetailInfoRow}>
+            <Text style={styles.bookingDetailInfoLabel}>Kategori</Text>
+            <Text style={styles.bookingDetailInfoValue}>{selectedRequest.category}</Text>
+          </View>
+          <View style={styles.bookingDetailDivider} />
+          <View style={styles.bookingDetailInfoRow}>
+            <Text style={styles.bookingDetailInfoLabel}>Status</Text>
+            <Text style={styles.bookingDetailInfoValue}>{statusColors.label}</Text>
+          </View>
+          <View style={styles.bookingDetailDivider} />
+          <View style={styles.bookingDetailInfoRow}>
+            <Text style={styles.bookingDetailInfoLabel}>Kontakt</Text>
+            <Text style={styles.bookingDetailInfoValue}>
+              {selectedRequest.contactEmail || selectedRequest.user?.email || 'Ingen email'}
+            </Text>
+          </View>
+          <View style={styles.bookingDetailDivider} />
+          <View style={styles.bookingDetailInfoRow}>
+            <Text style={styles.bookingDetailInfoLabel}>Oprettet</Text>
+            <Text style={styles.bookingDetailInfoValue}>{createdAt}</Text>
+          </View>
+        </View>
+        <Text style={styles.bookingDetailSectionTitle}>Beskrivelse</Text>
+        <View style={styles.bookingDetailCard}>
+          <Text style={styles.requestDescription}>{selectedRequest.description}</Text>
+        </View>
+        <Text style={styles.bookingDetailSectionTitle}>Handlinger</Text>
+        <View style={styles.bookingDetailCard}>
+          <Pressable
+            style={styles.bookingDetailActionRow}
+            disabled={selectedRequest.status?.trim().toUpperCase() === 'DONE' || updatingRequestId === selectedRequest.faqRequestId}
+            onPress={() => {
+              Alert.alert('Behandlet', 'Vil du markere henvendelsen som behandlet?', [
+                { text: 'Annuller', style: 'cancel' },
+                {
+                  text: 'Behandlet',
+                  onPress: () => {
+                    void handleMarkRequestDone();
+                  },
+                },
+              ]);
+            }}
+          >
+            <View style={styles.bookingDetailActionLeft}>
+              <Ionicons
+                name={updatingRequestId === selectedRequest.faqRequestId ? 'hourglass-outline' : 'checkmark-circle-outline'}
+                size={18}
+                color="#166534"
+              />
+              <Text style={styles.bookingDetailActionText}>
+                {selectedRequest.status?.trim().toUpperCase() === 'DONE'
+                  ? 'Henvendelsen er behandlet'
+                  : updatingRequestId === selectedRequest.faqRequestId
+                    ? 'Opdaterer henvendelse...'
+                    : 'Behandlet'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#98A2B3" />
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  };
   const renderUsersView = () => (
     <View style={styles.bookingsView}>
       <View style={styles.bookingTabsRow}>
@@ -1342,12 +1664,12 @@ export default function AdminScreen() {
                   style={styles.sidebarLink}
                   onPress={() => {
                     setIsSidebarOpen(false);
-                    setActiveView('overview');
-                    handleToggleSection('problems');
+                    setSelectedRequest(null);
+                    setActiveView('requests');
                   }}
                 >
                   <Ionicons name="document-text-outline" size={20} color="#111827" />
-                  <Text style={styles.sidebarLinkText}>Rapporter</Text>
+                  <Text style={styles.sidebarLinkText}>Henvendelser</Text>
                 </Pressable>
               </View>
 
@@ -1369,7 +1691,7 @@ export default function AdminScreen() {
         </Modal>
 
         <View style={styles.header}>
-          {activeView === 'bookingDetail' || activeView === 'userDetail' ? (
+          {activeView === 'bookingDetail' || activeView === 'userDetail' || activeView === 'requestDetail' ? (
             <Pressable
               style={styles.iconButton}
               onPress={() => {
@@ -1379,8 +1701,14 @@ export default function AdminScreen() {
                   return;
                 }
 
-                setSelectedUserProfile(null);
-                setActiveView('users');
+                if (activeView === 'userDetail') {
+                  setSelectedUserProfile(null);
+                  setActiveView('users');
+                  return;
+                }
+
+                setSelectedRequest(null);
+                setActiveView('requests');
               }}
             >
               <Ionicons name="arrow-back" size={20} color="#111827" />
@@ -1404,10 +1732,14 @@ export default function AdminScreen() {
                     ? 'Faciliteter'
                     : activeView === 'posts'
                       ? 'Opslag'
+                      : activeView === 'requests'
+                        ? 'Henvendelser'
+                        : activeView === 'requestDetail'
+                          ? 'Henvendelse'
                   : 'Overblik'}
           </Text>
 
-          {activeView === 'facilities' || activeView === 'posts' ? (
+          {activeView === 'facilities' || activeView === 'posts' || activeView === 'requests' || activeView === 'requestDetail' ? (
             <View style={styles.iconButtonPlaceholder} />
           ) : (
             <View style={styles.iconButton}>
@@ -1419,10 +1751,14 @@ export default function AdminScreen() {
                       ? 'person-outline'
                     : activeView === 'bookings'
                       ? 'options-outline'
-                      : activeView === 'users'
-                        ? 'search-outline'
-                        : activeView === 'posts'
-                          ? 'bookmark-outline'
+                    : activeView === 'users'
+                      ? 'search-outline'
+                      : activeView === 'posts'
+                        ? 'bookmark-outline'
+                        : activeView === 'requests'
+                          ? 'document-text-outline'
+                          : activeView === 'requestDetail'
+                            ? 'chatbubble-outline'
                         : 'notifications-outline'
                 }
                 size={20}
@@ -1436,6 +1772,8 @@ export default function AdminScreen() {
           ? renderBookingDetailView()
           : activeView === 'userDetail'
             ? renderUserDetailView()
+          : activeView === 'requestDetail'
+            ? renderRequestDetailView()
           : activeView === 'bookings'
             ? renderBookingsView()
             : activeView === 'users'
@@ -1444,6 +1782,8 @@ export default function AdminScreen() {
                 ? renderFacilitiesView()
                 : activeView === 'posts'
                   ? renderPostsView()
+                  : activeView === 'requests'
+                    ? renderRequestsView()
             : renderOverview()}
       </View>
     </SafeAreaView>
@@ -1482,6 +1822,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F9FAFB',
+  },
+  iconButtonPlaceholder: {
+    width: 34,
+    height: 34,
   },
   headerTitle: {
     fontSize: 20,
@@ -1667,6 +2011,13 @@ const styles = StyleSheet.create({
   },
   bookingOverviewMain: {
     flex: 1,
+  },
+  requestCardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 4,
   },
   bookingOverviewTitle: {
     fontSize: 16,
@@ -1975,6 +2326,14 @@ const styles = StyleSheet.create({
   bookingDetailUserInfo: {
     flex: 1,
   },
+  requestChatButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF4FF',
+  },
   bookingDetailUserName: {
     fontSize: 14,
     fontWeight: '600',
@@ -2028,6 +2387,13 @@ const styles = StyleSheet.create({
   bookingDetailActionDanger: {
     fontSize: 14,
     color: '#D92D20',
+  },
+  requestDescription: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 14,
+    lineHeight: 21,
+    color: '#344054',
   },
   scrollView: {
     flex: 1,

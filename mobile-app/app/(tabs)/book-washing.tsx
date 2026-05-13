@@ -307,6 +307,17 @@ export default function BookWashingScreen() {
                   <MaterialCommunityIcons name="party-popper" size={20} color="#111827" />
                   <Text style={styles.sidebarLinkText}>Festsal</Text>
                 </Pressable>
+
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.push('/faq');
+                  }}
+                >
+                  <Ionicons name="help-circle-outline" size={20} color="#111827" />
+                  <Text style={styles.sidebarLinkText}>FAQ</Text>
+                </Pressable>
               </View>
 
               <Pressable style={styles.logoutButton} onPress={handleLogout}>

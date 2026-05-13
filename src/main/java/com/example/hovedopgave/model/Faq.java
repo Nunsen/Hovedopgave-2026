@@ -10,6 +10,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Entity
@@ -30,4 +32,13 @@ public class Faq {
 
     @Column(nullable = false)
     private String category;
+
+    @Column
+    private String kind;
+
+    @Column(name = "contact_email")
+    private String contactEmail;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }

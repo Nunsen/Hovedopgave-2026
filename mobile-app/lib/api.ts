@@ -210,11 +210,43 @@ export type DashboardGroupDto = {
     createdAt: string;
 };
 
-export type DashboardFaqDto = {
+export type DashboardFaqRequestDto = {
+    faqRequestId: number;
+    user: DashboardUserDto | null;
+    category: string;
+    title: string;
+    description: string;
+    contactEmail: string;
+    status: string;
+    createdAt: string;
+};
+
+export type FaqDto = {
     faqId: number;
     question: string;
     answer: string;
     category: string;
+};
+
+export type CreateFaqInquiryPayload = {
+    userId: number;
+    category: string;
+    title: string;
+    description: string;
+};
+
+export type CreateFaqInquiryError = {
+    message: string;
+    fieldErrors?: Partial<Record<keyof CreateFaqInquiryPayload, string>>;
+};
+
+export type UpdateFaqRequestStatusPayload = {
+    status: 'IN_PROGRESS' | 'DONE';
+};
+
+export type UpdateFaqRequestStatusError = {
+    message: string;
+    fieldErrors?: Partial<Record<keyof UpdateFaqRequestStatusPayload, string>>;
 };
 
 export type DashboardDto = {
@@ -223,7 +255,7 @@ export type DashboardDto = {
     bookings: DashboardBookingDto[];
     posts: DashboardPostDto[];
     groups: DashboardGroupDto[];
-    faqs: DashboardFaqDto[];
+    requests: DashboardFaqRequestDto[];
 };
 
 export type BookingAvailabilityDto = {
@@ -481,6 +513,85 @@ export async function getDashboard(): Promise<{ data?: DashboardDto; error?: str
         return {data: responseBody as DashboardDto};
     } catch {
         return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function getFaqs(): Promise<{ data?: FaqDto[]; error?: string }> {
+    try {
+        const {response, responseBody} = await fetchJson('/faqs', {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke hente FAQ.'};
+        }
+
+        return {data: responseBody as FaqDto[]};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function createFaqInquiry(
+    payload: CreateFaqInquiryPayload,
+): Promise<{ data?: DashboardFaqRequestDto; error?: CreateFaqInquiryError }> {
+    try {
+        const {response, responseBody} = await fetchJson('/faq-requests', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            return {error: responseBody as CreateFaqInquiryError};
+        }
+
+        return {data: responseBody as DashboardFaqRequestDto};
+    } catch (error) {
+        const timedOut = error instanceof Error && error.name === 'AbortError';
+        return {
+            error: {
+                message: timedOut
+                    ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend kører på ${API_BASE_URL}.`
+                    : `Forbindelsen til serveren fejlede. Kontroller backend og netværk. Aktiv URL: ${API_BASE_URL}`,
+            },
+        };
+    }
+}
+
+export async function updateFaqRequestStatus(
+    faqRequestId: number,
+    payload: UpdateFaqRequestStatusPayload,
+): Promise<{ data?: DashboardFaqRequestDto; error?: UpdateFaqRequestStatusError }> {
+    try {
+        const {response, responseBody} = await fetchJson(`/faq-requests/${faqRequestId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            return {
+                error: (responseBody as UpdateFaqRequestStatusError | null) ?? {
+                    message: 'Kunne ikke opdatere henvendelsen.',
+                },
+            };
+        }
+
+        return {data: responseBody as DashboardFaqRequestDto};
+    } catch (error) {
+        const timedOut = error instanceof Error && error.name === 'AbortError';
+        return {
+            error: {
+                message: timedOut
+                    ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend kører på ${API_BASE_URL}.`
+                    : `Forbindelsen til serveren fejlede. Kontroller backend og netværk. Aktiv URL: ${API_BASE_URL}`,
+            },
+        };
     }
 }
 

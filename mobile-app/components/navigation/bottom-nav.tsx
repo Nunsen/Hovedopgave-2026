@@ -28,19 +28,19 @@ export function BottomNav({
                 />
             </Pressable>
 
-            <Pressable style={styles.bottomItem} onPress={onHomePress}>
-                <Ionicons
-                    name="home-outline"
-                    size={30}
-                    color={active === 'home' ? '#111827' : '#9CA3AF'}
-                />
-            </Pressable>
-
             <Pressable style={styles.bottomItem} onPress={onWashingPress}>
                 <MaterialCommunityIcons
                     name="washing-machine"
                     size={28}
                     color={active === 'washing' ? '#111827' : '#9CA3AF'}
+                />
+            </Pressable>
+
+            <Pressable style={styles.bottomItem} onPress={onHomePress}>
+                <Ionicons
+                    name="home-outline"
+                    size={30}
+                    color={active === 'home' ? '#111827' : '#9CA3AF'}
                 />
             </Pressable>
 

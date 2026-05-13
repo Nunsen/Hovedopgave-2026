@@ -3,7 +3,6 @@ package com.example.hovedopgave.dto;
 import com.example.hovedopgave.model.Booking;
 import com.example.hovedopgave.model.CommunityGroup;
 import com.example.hovedopgave.model.Facility;
-import com.example.hovedopgave.model.Faq;
 import com.example.hovedopgave.model.Post;
 import com.example.hovedopgave.model.User;
 
@@ -15,6 +14,6 @@ public record DashboardResponse(
         List<Booking> bookings,
         List<Post> posts,
         List<CommunityGroup> groups,
-        List<Faq> faqs
+        List<FaqRequestResponse> requests
 ) {
 }
