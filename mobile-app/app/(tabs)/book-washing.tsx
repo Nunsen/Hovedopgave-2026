@@ -47,6 +47,16 @@ function formatDisplayDate(value: string) {
   });
 }
 
+function getFacilityStatusLabel(status: string | null | undefined) {
+  const normalizedStatus = status?.trim().toUpperCase() ?? '';
+
+  if (normalizedStatus === 'OUT_OF_ORDER') {
+    return 'Ude af drift';
+  }
+
+  return '';
+}
+
 export default function BookWashingScreen() {
   const router = useRouter();
   const { logout, user, isLoading } = useAuth();
@@ -401,6 +411,7 @@ export default function BookWashingScreen() {
               <LegendDot color="#D1FAE5" label="Ledig" />
               <LegendDot color="#FEE2E2" label="Optaget" />
               <LegendDot color="#FED7AA" label="Din booking" />
+              <LegendDot color="#FECACA" label="Ude af drift" />
             </View>
           </View>
 
@@ -445,9 +456,29 @@ function FacilitySection({
   onBook: (facilityId: number, slot: BookingSlotDto) => void;
   onDelete: (bookingId: number) => void;
 }) {
+  const isOutOfOrder = facility.facilityStatus?.trim().toUpperCase() === 'OUT_OF_ORDER';
+
   return (
     <View style={styles.section}>
-      <Text style={styles.machineTitle}>{facility.facilityName}</Text>
+      <View style={styles.facilityHeaderRow}>
+        <Text style={styles.machineTitle}>{facility.facilityName}</Text>
+        {isOutOfOrder ? (
+          <Text
+            style={[
+              styles.facilityStatusBadge,
+              styles.facilityStatusOutOfOrder,
+            ]}
+          >
+            {getFacilityStatusLabel(facility.facilityStatus)}
+          </Text>
+        ) : null}
+      </View>
+
+      {isOutOfOrder ? (
+        <Text style={styles.outOfOrderText}>
+          Faciliteten er midlertidigt ude af drift og kan ikke bookes.
+        </Text>
+      ) : null}
 
       <View style={styles.slotGrid}>
         {facility.slots.map((slot) => {
@@ -455,15 +486,22 @@ function FacilitySection({
           const isSubmitting = bookingSlotKey === slotKey;
           const isDeleting = slot.bookingId != null && deletingBookingId === slot.bookingId;
           const canDelete = !slot.available && slot.ownedByCurrentUser && !!slot.bookingId;
+          const slotDisabledByFacility = isOutOfOrder && slot.available;
 
           return (
             <Pressable
               key={slotKey}
               style={[
                 styles.slotCard,
-                slot.available ? styles.slotAvailable : canDelete ? styles.slotOwned : styles.slotUnavailable,
+                slotDisabledByFacility
+                  ? styles.slotUnavailable
+                  : slot.available
+                    ? styles.slotAvailable
+                    : canDelete
+                      ? styles.slotOwned
+                      : styles.slotUnavailable,
               ]}
-              disabled={(!slot.available && !canDelete) || isSubmitting || isDeleting}
+              disabled={slotDisabledByFacility || (!slot.available && !canDelete) || isSubmitting || isDeleting}
               onPress={() => {
                 if (canDelete && slot.bookingId) {
                   onDelete(slot.bookingId);
@@ -489,6 +527,8 @@ function FacilitySection({
                   ? 'Booker...'
                   : isDeleting
                     ? 'Sletter...'
+                    : slotDisabledByFacility
+                      ? 'Ude af drift'
                     : slot.available
                       ? 'Ledig tid'
                       : canDelete
@@ -662,6 +702,27 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
     color: '#111827',
+  },
+  facilityHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  facilityStatusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  facilityStatusOutOfOrder: {
+    color: '#B42318',
+    backgroundColor: '#FEE4E2',
+  },
+  outOfOrderText: {
+    fontSize: 13,
+    color: '#B42318',
   },
   sectionSubtext: {
     fontSize: 13,

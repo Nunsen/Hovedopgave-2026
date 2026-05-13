@@ -61,6 +61,9 @@ public class ActivationCodeService {
 
         return new ActivationCodeResponse(
                 user.getUserId(),
+                (user.getFirstName() + " " + user.getLastName()).trim(),
+                user.getEmail(),
+                user.getRole(),
                 activationCode.getCode(),
                 true,
                 "Brugeren er nu aktiveret."

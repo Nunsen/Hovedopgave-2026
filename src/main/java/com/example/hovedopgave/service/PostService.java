@@ -129,10 +129,17 @@ public class PostService {
                         Map.of("postId", "Der findes intet opslag med dette id.")
                 ));
 
-        if (userId == null || post.getUser() == null || !userId.equals(post.getUser().getUserId())) {
+        User actingUser = userId == null
+                ? null
+                : userRepository.findById(userId).orElse(null);
+        boolean isAdmin = actingUser != null
+                && actingUser.getRole() != null
+                && actingUser.getRole().equalsIgnoreCase("ADMIN");
+
+        if (!isAdmin && (userId == null || post.getUser() == null || !userId.equals(post.getUser().getUserId()))) {
             throw new PostValidationException(
                     "Du har ikke adgang til at slette dette opslag.",
-                    Map.of("userId", "Kun forfatteren kan slette opslaget.")
+                    Map.of("userId", "Kun forfatteren eller en administrator kan slette opslaget.")
             );
         }
 

@@ -32,6 +32,7 @@ public class BookingService {
     private static final String WASHING_MACHINE_TYPE = "WASHING_MACHINE";
     private static final String DRYER_TYPE = "DRYER";
     private static final String PARTY_ROOM_TYPE = "PARTY_ROOM";
+    private static final String OUT_OF_ORDER_STATUS = "OUT_OF_ORDER";
     private static final LocalTime FIRST_SLOT_START = LocalTime.of(7, 0);
     private static final LocalTime LAST_SLOT_END = LocalTime.of(23, 0);
     private static final LocalTime PARTY_ROOM_START = LocalTime.MIDNIGHT;
@@ -71,6 +72,7 @@ public class BookingService {
                     return new BookingFacilityAvailabilityResponse(
                             facility.getFacilityId(),
                             facility.getName(),
+                            facility.getStatus(),
                             buildSlots(bookings, userId)
                     );
                 })
@@ -105,6 +107,8 @@ public class BookingService {
                     Map.of("facilityId", "Vaelg en vaskemaskine eller en toerretumbler.")
             );
         }
+
+        ensureFacilityIsBookable(facility);
 
         LocalDate date = LocalDate.parse(request.date().trim());
         LocalTime startTime = LocalTime.parse(request.startTime().trim());
@@ -190,6 +194,7 @@ public class BookingService {
                 month.toString(),
                 partyRoom.getFacilityId(),
                 partyRoom.getName(),
+                partyRoom.getStatus(),
                 days
         );
     }
@@ -223,6 +228,7 @@ public class BookingService {
                 ));
 
         Facility partyRoom = getPartyRoomFacility();
+        ensureFacilityIsBookable(partyRoom);
         LocalDate date = LocalDate.parse(request.date().trim());
 
         if (date.isBefore(LocalDate.now())) {
@@ -298,12 +304,19 @@ public class BookingService {
                         Map.of("bookingId", "Der findes ingen booking med dette id.")
                 ));
 
-        Integer bookingUserId = booking.getUser() != null ? booking.getUser().getUserId() : null;
+        User actingUser = userRepository.findById(userId)
+                .orElseThrow(() -> new BookingValidationException(
+                        "Brugeren findes ikke.",
+                        Map.of("userId", "Der findes ingen bruger med dette id.")
+                ));
 
-        if (bookingUserId == null || !bookingUserId.equals(userId)) {
+        Integer bookingUserId = booking.getUser() != null ? booking.getUser().getUserId() : null;
+        boolean isAdmin = actingUser.getRole() != null && actingUser.getRole().equalsIgnoreCase("ADMIN");
+
+        if (!isAdmin && (bookingUserId == null || !bookingUserId.equals(userId))) {
             throw new BookingValidationException(
                     "Du kan kun slette dine egne bookinger.",
-                    Map.of("userId", "Kun ejeren af bookingen kan slette den.")
+                    Map.of("userId", "Kun ejeren af bookingen eller en administrator kan slette den.")
             );
         }
 
@@ -431,6 +444,17 @@ public class BookingService {
                     long daysAfterExistingBooking = java.time.temporal.ChronoUnit.DAYS.between(existingDate, date);
                     return daysAfterExistingBooking > 0 && daysAfterExistingBooking < 4;
                 });
+    }
+
+    private void ensureFacilityIsBookable(Facility facility) {
+        String facilityStatus = facility.getStatus() == null ? "" : facility.getStatus().trim().toUpperCase();
+
+        if (OUT_OF_ORDER_STATUS.equals(facilityStatus)) {
+            throw new BookingValidationException(
+                    "Faciliteten er ude af drift.",
+                    Map.of("facilityId", "Faciliteten kan ikke bookes, mens den er ude af drift.")
+            );
+        }
     }
 
     private YearMonth parseMonth(String value) {

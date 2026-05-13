@@ -39,6 +39,16 @@ function formatDisplayDate(value: string) {
   });
 }
 
+function getFacilityStatusLabel(status: string | null | undefined) {
+  const normalizedStatus = status?.trim().toUpperCase() ?? '';
+
+  if (normalizedStatus === 'OUT_OF_ORDER') {
+    return 'Ude af drift';
+  }
+
+  return '';
+}
+
 function formatMonthLabel(value: Date) {
   return value.toLocaleDateString('da-DK', {
     month: 'long',
@@ -195,6 +205,7 @@ export default function BookPartyRoomScreen() {
     () => bookings.find((booking) => booking.date && booking.facilityName?.toLowerCase().includes('fest')) ?? null,
     [bookings],
   );
+  const partyRoomOutOfOrder = availability?.facilityStatus?.trim().toUpperCase() === 'OUT_OF_ORDER';
 
   if (isLoading || loadingAvailability) {
     return (
@@ -312,6 +323,26 @@ export default function BookPartyRoomScreen() {
           </View>
 
           <View style={styles.calendarCard}>
+            <View style={styles.facilityStatusRow}>
+              <Text style={styles.sectionTitle}>Festsal</Text>
+              {partyRoomOutOfOrder ? (
+                <Text
+                  style={[
+                    styles.facilityStatusBadge,
+                    styles.facilityStatusOutOfOrder,
+                  ]}
+                >
+                  {getFacilityStatusLabel(availability?.facilityStatus)}
+                </Text>
+              ) : null}
+            </View>
+
+            {partyRoomOutOfOrder ? (
+              <Text style={styles.outOfOrderText}>
+                Festsalen er midlertidigt ude af drift og kan ikke bookes.
+              </Text>
+            ) : null}
+
             <View style={styles.monthHeader}>
               <Pressable
                 style={styles.monthButton}
@@ -342,7 +373,7 @@ export default function BookPartyRoomScreen() {
                 const isOwned = day.status === 'owned';
                 const isBooked = day.status === 'booked';
                 const isCooldown = day.status === 'cooldown';
-                const isDisabled = !day.inCurrentMonth || isBooked || isCooldown;
+                const isDisabled = !day.inCurrentMonth || isBooked || isCooldown || partyRoomOutOfOrder;
 
                 return (
                   <Pressable
@@ -376,6 +407,7 @@ export default function BookPartyRoomScreen() {
               <LegendSwatch label="Ledig" style={styles.legendAvailable} />
               <LegendSwatch label="Optaget" style={styles.legendBooked} />
               <LegendSwatch label="Din booking" style={styles.legendSelected} />
+              <LegendSwatch label="Ude af drift" style={styles.legendOutOfOrder} />
             </View>
           </View>
 
@@ -394,9 +426,11 @@ export default function BookPartyRoomScreen() {
           <Pressable
             style={[
               styles.confirmButton,
-              !selectedDay || selectedDay.status !== 'available' || submitting ? styles.confirmButtonDisabled : null,
+              !selectedDay || selectedDay.status !== 'available' || submitting || partyRoomOutOfOrder
+                ? styles.confirmButtonDisabled
+                : null,
             ]}
-            disabled={!selectedDay || selectedDay.status !== 'available' || submitting}
+            disabled={!selectedDay || selectedDay.status !== 'available' || submitting || partyRoomOutOfOrder}
             onPress={handleConfirmBooking}
           >
             <Text style={styles.confirmButtonText}>{submitting ? 'Bekræfter...' : 'Bekræft booking'}</Text>
@@ -498,6 +532,27 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 14, paddingBottom: 120, gap: 14 },
   section: { gap: 10 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: '#111827' },
+  facilityStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  facilityStatusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  facilityStatusOutOfOrder: {
+    color: '#B42318',
+    backgroundColor: '#FEE4E2',
+  },
+  outOfOrderText: {
+    fontSize: 13,
+    color: '#B42318',
+  },
   bookingCard: {
     borderRadius: 16,
     borderWidth: 1,
@@ -568,6 +623,7 @@ const styles = StyleSheet.create({
   legendAvailable: { backgroundColor: '#D1FAE5' },
   legendBooked: { backgroundColor: '#FEE2E2' },
   legendSelected: { backgroundColor: '#FED7AA', borderColor: '#FED7AA' },
+  legendOutOfOrder: { backgroundColor: '#FECACA' },
   legendText: { fontSize: 14, color: '#111827' },
   infoCard: {
     borderRadius: 16,

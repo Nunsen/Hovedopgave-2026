@@ -4,7 +4,15 @@ type ExtraConfig = {
     apiBaseUrl?: string;
 };
 
+const DEFAULT_API_HOST = '10.136.138.225';
+const DEFAULT_API_PORT = '8080';
 const extra = (Constants.expoConfig?.extra ?? {}) as ExtraConfig;
+const envApiBaseUrl =
+    typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_BASE_URL : undefined;
+const envApiHost =
+    typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_HOST : undefined;
+const envApiPort =
+    typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_PORT : undefined;
 const manifestHostUri =
     (Constants.expoConfig as { hostUri?: string } | null)?.hostUri ??
     ((Constants as unknown as {
@@ -17,8 +25,24 @@ const manifestHostUri =
         }).manifest2?.extra?.expoClient?.hostUri);
 
 function resolveApiBaseUrl() {
+    if (envApiBaseUrl) {
+        return envApiBaseUrl;
+    }
+
     if (extra.apiBaseUrl) {
         return extra.apiBaseUrl;
+    }
+
+    if (envApiHost || envApiPort) {
+        return `http://${envApiHost ?? DEFAULT_API_HOST}:${envApiPort ?? DEFAULT_API_PORT}/api`;
+    }
+
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+        return `http://localhost:${DEFAULT_API_PORT}/api`;
+    }
+
+    if (DEFAULT_API_HOST) {
+        return `http://${DEFAULT_API_HOST}:${DEFAULT_API_PORT}/api`;
     }
 
     if (manifestHostUri) {
@@ -140,6 +164,68 @@ export type BookingSlotDto = {
     ownedByCurrentUser: boolean;
 };
 
+export type DashboardUserDto = {
+    userId: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    apartmentNumber: string | null;
+    isActivated: boolean;
+    role: string;
+};
+
+export type DashboardFacilityDto = {
+    facilityId: number;
+    name: string;
+    type: string;
+    status: string;
+};
+
+export type DashboardBookingDto = {
+    bookingId: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    createdAt: string;
+    user: DashboardUserDto | null;
+    facility: DashboardFacilityDto | null;
+};
+
+export type DashboardPostDto = {
+    postId: number;
+    title: string;
+    content: string;
+    category: string;
+    createdAt: string;
+    isImportant?: boolean;
+};
+
+export type DashboardGroupDto = {
+    groupId: number;
+    groupName: string | null;
+    legacyName: string | null;
+    description: string;
+    type: string;
+    createdAt: string;
+};
+
+export type DashboardFaqDto = {
+    faqId: number;
+    question: string;
+    answer: string;
+    category: string;
+};
+
+export type DashboardDto = {
+    users: DashboardUserDto[];
+    facilities: DashboardFacilityDto[];
+    bookings: DashboardBookingDto[];
+    posts: DashboardPostDto[];
+    groups: DashboardGroupDto[];
+    faqs: DashboardFaqDto[];
+};
+
 export type BookingAvailabilityDto = {
     date: string;
     facilities: BookingFacilityAvailabilityDto[];
@@ -148,6 +234,7 @@ export type BookingAvailabilityDto = {
 export type BookingFacilityAvailabilityDto = {
     facilityId: number;
     facilityName: string;
+    facilityStatus: string;
     slots: BookingSlotDto[];
 };
 
@@ -164,7 +251,24 @@ export type PartyRoomAvailabilityDto = {
     month: string;
     facilityId: number;
     facilityName: string;
+    facilityStatus: string;
     days: PartyRoomDayAvailabilityDto[];
+};
+
+export type FacilityDto = {
+    facilityId: number;
+    name: string;
+    type: string;
+    status: string;
+};
+
+export type UpdateFacilityStatusPayload = {
+    status: 'ACTIVE' | 'OUT_OF_ORDER';
+};
+
+export type UpdateFacilityStatusError = {
+    message: string;
+    fieldErrors?: Partial<Record<keyof UpdateFacilityStatusPayload, string>>;
 };
 
 export type CreatePartyRoomBookingPayload = {
@@ -364,6 +468,57 @@ export async function getBookings(
     }
 }
 
+export async function getDashboard(): Promise<{ data?: DashboardDto; error?: string }> {
+    try {
+        const {response, responseBody} = await fetchJson('/dashboard', {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            return {error: 'Kunne ikke hente administratoroverblik.'};
+        }
+
+        return {data: responseBody as DashboardDto};
+    } catch {
+        return {error: 'Forbindelse til server fejlede.'};
+    }
+}
+
+export async function updateFacilityStatus(
+    facilityId: number,
+    payload: UpdateFacilityStatusPayload,
+): Promise<{ data?: FacilityDto; error?: UpdateFacilityStatusError }> {
+    try {
+        const {response, responseBody} = await fetchJson(`/facilities/${facilityId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const typedError = responseBody as UpdateFacilityStatusError | null;
+            return {
+                error: typedError ?? {
+                    message: 'Kunne ikke opdatere faciliteten.',
+                },
+            };
+        }
+
+        return {data: responseBody as FacilityDto};
+    } catch (error) {
+        const timedOut = error instanceof Error && error.name === 'AbortError';
+        return {
+            error: {
+                message: timedOut
+                    ? `Serveren svarede ikke inden for ${REQUEST_TIMEOUT_MS / 1000} sekunder. Kontroller at backend kører på ${API_BASE_URL}.`
+                    : `Forbindelsen til serveren fejlede. Kontroller backend og netværk. Aktiv URL: ${API_BASE_URL}`,
+            },
+        };
+    }
+}
+
 export async function getBookingAvailability(
     date: string,
     userId?: number,
@@ -469,12 +624,13 @@ export async function deleteBooking(
     userId: number,
 ): Promise<{ error?: string }> {
     try {
-        const {response} = await fetchJson(`/bookings/${bookingId}?userId=${userId}`, {
+        const {response, responseBody} = await fetchJson(`/bookings/${bookingId}?userId=${userId}`, {
             method: 'DELETE',
         });
 
         if (!response.ok) {
-            return {error: 'Kunne ikke slette bookingen.'};
+            const errorMessage = (responseBody as { message?: string } | null)?.message;
+            return {error: errorMessage ?? 'Kunne ikke slette bookingen.'};
         }
 
         return {};
@@ -1039,6 +1195,9 @@ export type ActivateUserPayload = {
 
 export type ActivateUserSuccess = {
     userId: number;
+    fullName: string;
+    email: string;
+    role: string;
     code: string;
     activated: boolean;
     message: string;

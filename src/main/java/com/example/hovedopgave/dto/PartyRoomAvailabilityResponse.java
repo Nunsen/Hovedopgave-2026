@@ -6,6 +6,7 @@ public record PartyRoomAvailabilityResponse(
         String month,
         Integer facilityId,
         String facilityName,
+        String facilityStatus,
         List<PartyRoomDayAvailabilityResponse> days
 ) {
 }

@@ -18,7 +18,7 @@ import { activateUser } from '@/lib/api';
 
 export default function ActivationCodeScreen() {
   const router = useRouter();
-  const { clearPendingActivationUser, pendingActivationUser } = useAuth();
+  const { clearPendingActivationUser, login, pendingActivationUser } = useAuth();
 
   const [permission, requestPermission] = useCameraPermissions();
   const [isScannerVisible, setIsScannerVisible] = useState(false);
@@ -89,8 +89,15 @@ export default function ActivationCodeScreen() {
       setFeedbackMessage('Konto oprettet');
 
       setTimeout(async () => {
+        await login({
+          userId: data.userId,
+          fullName: data.fullName,
+          email: data.email,
+          role: data.role,
+          message: data.message,
+        });
         await clearPendingActivationUser();
-        router.replace('/login');
+        router.replace(data.role === 'ADMIN' ? '/admin' : '/home');
       }, 800);
     }
   };
