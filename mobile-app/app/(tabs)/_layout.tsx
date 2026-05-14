@@ -7,6 +7,8 @@ export default function AuthLayout() {
       <Stack.Screen name="resetPassword" options={{ headerShown: false }} />
       <Stack.Screen name="register" options={{ headerShown: false }} />
       <Stack.Screen name="admin" options={{ headerShown: false }} />
+      <Stack.Screen name="faq" options={{ headerShown: false }} />
+      <Stack.Screen name="faq-request" options={{ headerShown: false }} />
       <Stack.Screen
         name="activation-code"
         options={{ title: 'Aktiveringskode', headerBackTitle: 'Tilbage' }}

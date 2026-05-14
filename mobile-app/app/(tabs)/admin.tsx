@@ -1,7 +1,7 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -176,7 +176,9 @@ function SectionHeader({
 
 export default function AdminScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ view?: string; requestId?: string }>();
   const { isLoading, logout, user } = useAuth();
+  const appliedRouteStateRef = useRef<string | null>(null);
 
   const [dashboard, setDashboard] = useState<DashboardDto | null>(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
@@ -232,6 +234,39 @@ export default function AdminScreen() {
       void loadDashboard();
     }, [loadDashboard]),
   );
+
+  useEffect(() => {
+    if (!dashboard) {
+      return;
+    }
+
+    const routeKey = `${params.view ?? ''}:${params.requestId ?? ''}`;
+    if (!params.view || appliedRouteStateRef.current === routeKey) {
+      return;
+    }
+
+    if (params.view === 'requestDetail') {
+      const requestId = Number(params.requestId);
+
+      if (Number.isFinite(requestId)) {
+        const matchingRequest =
+          (dashboard.requests ?? []).find((request) => request.faqRequestId === requestId) ?? null;
+
+        if (matchingRequest) {
+          setSelectedRequest(matchingRequest);
+          setActiveView('requestDetail');
+          appliedRouteStateRef.current = routeKey;
+          return;
+        }
+      }
+    }
+
+    if (params.view === 'requests') {
+      setSelectedRequest(null);
+      setActiveView('requests');
+      appliedRouteStateRef.current = routeKey;
+    }
+  }, [dashboard, params.requestId, params.view]);
 
   const activeBookings = useMemo(
     () =>
@@ -596,6 +631,8 @@ export default function AdminScreen() {
         tab: 'Samtaler',
         groupId: String(result.data.groupId),
         conversation: '1',
+        origin: 'admin',
+        requestId: String(selectedRequest.faqRequestId),
       },
     });
   }, [router, selectedRequest, user]);

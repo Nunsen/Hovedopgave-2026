@@ -23,42 +23,56 @@ const faqCategories = [
   {
     title: 'Akutte problemer',
     description: 'Hvad gør du i tilfælde af akutte eller farlige situationer.',
+    details:
+        'Ved brandalarm skal bygningen forlades straks via nærmeste nødudgang. Ved vandskader eller strømsvigt skal administrationen eller akuttelefonen kontaktes hurtigst muligt. Ring 112 ved fare for personer eller bygningen.',
     icon: 'warning-outline',
     color: '#F43F5E',
   },
   {
     title: 'Booking og app-funktioner',
     description: 'Spørgsmål om booking, faciliteter og brug af appen.',
+    details:
+        'Vaskeri og fællesrum kan bookes direkte i appen. Bookinger kan annulleres under “Mine bookinger”. Hvis du oplever problemer med login, notifikationer eller manglende adgang til funktioner, kan appen genstartes eller adgangskoden nulstilles.',
     icon: 'calendar-outline',
     color: '#22C55E',
   },
   {
     title: 'Tekniske problemer',
     description: 'Få hjælp til tekniske problemer og fejl i appen.',
+    details:
+        'Hvis appen fryser, crasher eller ikke opdaterer korrekt, anbefales det at genstarte appen eller opdatere til nyeste version. Problemer med opslag, profiler eller beskeder kan rapporteres til support gennem appen.',
     icon: 'build-outline',
     color: '#F59E0B',
   },
   {
     title: 'Regler og fællesområder',
     description: 'Information om regler, støj, rengøring og fællesområder.',
+    details:
+        'Der skal være ro på kollegiet mellem kl. 22:00 og 08:00. Fællesområder skal rengøres efter brug, og affald skal sorteres korrekt. Festsalen skal bookes på forhånd, og gæster skal tage hensyn til øvrige beboere.',
     icon: 'megaphone-outline',
     color: '#8B5CF6',
   },
   {
     title: 'Facilitetsproblemer',
-    description: 'Rapportér problemer med maskiner, udstyr og faciliteter.',
+    description: 'Rapporter problemer med maskiner, udstyr og faciliteter.',
+    details:
+        'Defekte vaskemaskiner, tørretumblere, låse, lys eller andre faciliteter kan rapporteres direkte i appen. Beskriv problemet så præcist som muligt for hurtigere behandling.',
     icon: 'chatbox-ellipses-outline',
     color: '#2563EB',
   },
   {
     title: 'Støj og adfærd',
     description: 'Spørgsmål om støj, adfærd og nabohensyn.',
+    details:
+        'Vis hensyn til andre beboere ved at begrænse høj musik og støj, især om aftenen. Gentagne klager over uro eller uhensigtsmæssig adfærd kan føre til advarsler fra administrationen.',
     icon: 'people-outline',
     color: '#EF4444',
   },
   {
     title: 'Forslag og feedback',
-    description: 'Del dine idéer og forslag til forbedringer.',
+    description: 'Del dine ideer og forslag til forbedringer.',
+    details:
+        'Forslag til nye funktioner, sociale aktiviteter eller forbedringer af faciliteter og appen kan sendes direkte til administrationen gennem feedback-sektionen.',
     icon: 'bulb-outline',
     color: '#06B6D4',
   },
@@ -72,6 +86,9 @@ export default function FaqScreen() {
   const [loadingFaqs, setLoadingFaqs] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [expandedCategoryTitle, setExpandedCategoryTitle] = useState<string | null>(
+    faqCategories[0].title,
+  );
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -121,7 +138,7 @@ export default function FaqScreen() {
     }
 
     return faqCategories.filter((category) => {
-      const searchableValues = [category.title, category.description];
+      const searchableValues = [category.title, category.description, category.details];
       return searchableValues.some((value) => value.toLowerCase().includes(normalizedSearch));
     });
   }, [searchText]);
@@ -154,7 +171,10 @@ export default function FaqScreen() {
               <View>
                 <View style={styles.sidebarHeader}>
                   <Text style={styles.sidebarTitle}>Menu</Text>
-                  <Pressable style={styles.sidebarCloseButton} onPress={() => setIsSidebarOpen(false)}>
+                  <Pressable
+                    style={styles.sidebarCloseButton}
+                    onPress={() => setIsSidebarOpen(false)}
+                  >
                     <Ionicons name="close" size={22} color="#111827" />
                   </Pressable>
                 </View>
@@ -165,22 +185,69 @@ export default function FaqScreen() {
                   <Text style={styles.sidebarUserMeta}>{user.role}</Text>
                 </View>
 
-                <SidebarLink icon="home-outline" label="Forside" onPress={() => { setIsSidebarOpen(false); router.replace('/home'); }} />
-                <SidebarLink icon="add-circle-outline" label="Nyt opslag" onPress={() => { setIsSidebarOpen(false); router.push('/new-post'); }} />
-                <SidebarLink icon="chatbubble-ellipses-outline" label="Chat" onPress={() => { setIsSidebarOpen(false); router.push('/chat'); }} />
-                <SidebarLink icon="person-outline" label="Profil" onPress={() => { setIsSidebarOpen(false); router.push('/profile'); }} />
+                <SidebarLink
+                  icon="home-outline"
+                  label="Forside"
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.replace('/home');
+                  }}
+                />
+                <SidebarLink
+                  icon="add-circle-outline"
+                  label="Nyt opslag"
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.push('/new-post');
+                  }}
+                />
+                <SidebarLink
+                  icon="chatbubble-ellipses-outline"
+                  label="Chat"
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.push('/chat');
+                  }}
+                />
+                <SidebarLink
+                  icon="person-outline"
+                  label="Profil"
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.push('/profile');
+                  }}
+                />
 
-                <Pressable style={styles.sidebarLink} onPress={() => { setIsSidebarOpen(false); router.push('/book-washing'); }}>
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.push('/book-washing');
+                  }}
+                >
                   <MaterialCommunityIcons name="washing-machine" size={20} color="#111827" />
                   <Text style={styles.sidebarLinkText}>Vaskeri</Text>
                 </Pressable>
 
-                <Pressable style={styles.sidebarLink} onPress={() => { setIsSidebarOpen(false); router.push('/book-partyroom'); }}>
+                <Pressable
+                  style={styles.sidebarLink}
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.push('/book-partyroom');
+                  }}
+                >
                   <MaterialCommunityIcons name="party-popper" size={20} color="#111827" />
                   <Text style={styles.sidebarLinkText}>Festsal</Text>
                 </Pressable>
 
-                <SidebarLink icon="help-circle-outline" label="FAQ" onPress={() => { setIsSidebarOpen(false); router.replace('/faq'); }} />
+                <SidebarLink
+                  icon="help-circle-outline"
+                  label="FAQ"
+                  onPress={() => {
+                    setIsSidebarOpen(false);
+                    router.replace('/faq');
+                  }}
+                />
               </View>
 
               <Pressable
@@ -206,9 +273,14 @@ export default function FaqScreen() {
           <View style={styles.iconButtonPlaceholder} />
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.heroText}>
-            Find svar på typiske spørgsmål, eller kontakt os, hvis du har brug for yderligere hjælp.
+            Find svar på typiske spørgsmål, eller kontakt os, hvis du har brug for yderligere
+            hjælp.
           </Text>
 
           <View style={styles.searchField}>
@@ -225,20 +297,46 @@ export default function FaqScreen() {
           <Text style={styles.sectionTitle}>Kategorier</Text>
 
           <View style={styles.categoryGrid}>
-            {filteredCategories.map((category) => (
-              <View key={category.title} style={styles.categoryCard}>
-                <View style={[styles.categoryIconWrap, { backgroundColor: `${category.color}14` }]}>
-                  <Ionicons name={category.icon} size={20} color={category.color} />
-                </View>
+            {filteredCategories.map((category) => {
+              const isExpanded = expandedCategoryTitle === category.title;
 
-                <View style={styles.categoryTextWrap}>
-                  <Text style={styles.categoryTitle}>{category.title}</Text>
-                  <Text style={styles.categoryDescription}>{category.description}</Text>
-                </View>
+              return (
+                <Pressable
+                  key={category.title}
+                  style={styles.categoryCard}
+                  onPress={() =>
+                    setExpandedCategoryTitle((currentTitle) =>
+                      currentTitle === category.title ? null : category.title,
+                    )
+                  }
+                >
+                  <View style={styles.categoryCardTop}>
+                    <View
+                      style={[styles.categoryIconWrap, { backgroundColor: `${category.color}14` }]}
+                    >
+                      <Ionicons name={category.icon} size={20} color={category.color} />
+                    </View>
 
-                <Ionicons name="chevron-forward" size={18} color="#667085" />
-              </View>
-            ))}
+                    <View style={styles.categoryTextWrap}>
+                      <Text style={styles.categoryTitle}>{category.title}</Text>
+                      <Text style={styles.categoryDescription}>{category.description}</Text>
+                    </View>
+
+                    <Ionicons
+                      name={isExpanded ? 'chevron-up' : 'chevron-forward'}
+                      size={18}
+                      color="#667085"
+                    />
+                  </View>
+
+                  {isExpanded ? (
+                    <View style={styles.categoryDetailsWrap}>
+                      <Text style={styles.categoryDetailsText}>{category.details}</Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
           </View>
 
           {filteredFaqs.length > 0 ? (
@@ -273,6 +371,10 @@ export default function FaqScreen() {
               <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
             </Pressable>
           </View>
+
+          <Text style={styles.footerContactText}>
+            Soranernes hus, Solvej 1, 2000 Frederiksberg, Kontakt på +4534782375.
+          </Text>
         </ScrollView>
 
         <BottomNav
@@ -288,7 +390,15 @@ export default function FaqScreen() {
   );
 }
 
-function SidebarLink({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
+function SidebarLink({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable style={styles.sidebarLink} onPress={onPress}>
       <Ionicons name={icon} size={20} color="#111827" />
@@ -299,9 +409,18 @@ function SidebarLink({ icon, label, onPress }: { icon: keyof typeof Ionicons.gly
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  sidebarOverlay: { flex: 1, flexDirection: 'row-reverse', backgroundColor: 'rgba(17, 24, 39, 0.28)' },
+  sidebarOverlay: {
+    flex: 1,
+    flexDirection: 'row-reverse',
+    backgroundColor: 'rgba(17, 24, 39, 0.28)',
+  },
   sidebarBackdrop: { flex: 1 },
   sidebarPanel: {
     width: 278,
@@ -316,7 +435,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 10,
   },
-  sidebarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  sidebarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
   sidebarTitle: { fontSize: 22, fontWeight: '700', color: '#111827' },
   sidebarCloseButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   sidebarUserCard: {
@@ -393,6 +517,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     padding: 16,
+  },
+  categoryCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -407,6 +533,13 @@ const styles = StyleSheet.create({
   categoryTextWrap: { flex: 1 },
   categoryTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 4 },
   categoryDescription: { fontSize: 13, lineHeight: 18, color: '#667085' },
+  categoryDetailsWrap: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F2F4F7',
+  },
+  categoryDetailsText: { fontSize: 14, lineHeight: 21, color: '#475467' },
   faqCard: {
     borderRadius: 16,
     borderWidth: 1,
@@ -448,4 +581,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   helpButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  footerContactText: {
+    marginTop: 22,
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#98A2B3',
+    textAlign: 'center',
+  },
 });

@@ -112,7 +112,13 @@ function getCounterpartUserId(
 export default function ChatScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const params = useLocalSearchParams<{ tab?: string; groupId?: string; conversation?: string }>();
+    const params = useLocalSearchParams<{
+        tab?: string;
+        groupId?: string;
+        conversation?: string;
+        origin?: string;
+        requestId?: string;
+    }>();
 
     const { isLoading, logout, user } = useAuth();
     const [activeTab, setActiveTab] = useState<ChatTab>('Samtaler');
@@ -138,6 +144,8 @@ export default function ChatScreen() {
     const [addingGroupMembers, setAddingGroupMembers] = useState(false);
     const [groupInfoConversation, setGroupInfoConversation] = useState<ChatGroupDto | null>(null);
     const [hiddenDirectGroupIds, setHiddenDirectGroupIds] = useState<number[]>([]);
+    const isAdminEntry = params.origin === 'admin';
+    const adminRequestId = params.requestId ? Number(params.requestId) : NaN;
 
     const clientRef = useRef<ChatStompClient | null>(null);
     const selectedGroupIdRef = useRef<number | null>(null);
@@ -655,6 +663,20 @@ export default function ChatScreen() {
 
     const selectedConversation = allConversationGroups.find((group) => group.groupId === selectedGroupId) ?? null;
 
+    const navigateBackToAdmin = useCallback(() => {
+        router.replace({
+            pathname: '/admin',
+            params: Number.isFinite(adminRequestId)
+                ? {
+                    view: 'requestDetail',
+                    requestId: String(adminRequestId),
+                }
+                : {
+                    view: 'requests',
+                },
+        });
+    }, [adminRequestId, router]);
+
     if (isLoading || loadingOverview) {
         return (
             <SafeAreaView style={styles.loadingContainer}>
@@ -668,86 +690,88 @@ export default function ChatScreen() {
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
             <View style={styles.container}>
-                <Modal
-                    transparent
-                    visible={isSidebarOpen}
-                    animationType="fade"
-                    onRequestClose={() => setIsSidebarOpen(false)}
-                >
-                    <View style={styles.sidebarOverlay}>
-                        <Pressable style={styles.sidebarBackdrop} onPress={() => setIsSidebarOpen(false)} />
+                {!isAdminEntry ? (
+                    <Modal
+                        transparent
+                        visible={isSidebarOpen}
+                        animationType="fade"
+                        onRequestClose={() => setIsSidebarOpen(false)}
+                    >
+                        <View style={styles.sidebarOverlay}>
+                            <Pressable style={styles.sidebarBackdrop} onPress={() => setIsSidebarOpen(false)} />
 
-                        <View style={styles.sidebarPanel}>
-                            <View>
-                                <View style={styles.sidebarHeader}>
-                                    <Text style={styles.sidebarTitle}>Menu</Text>
-                                    <Pressable style={styles.sidebarCloseButton} onPress={() => setIsSidebarOpen(false)}>
-                                        <Ionicons name="close" size={22} color="#111827" />
+                            <View style={styles.sidebarPanel}>
+                                <View>
+                                    <View style={styles.sidebarHeader}>
+                                        <Text style={styles.sidebarTitle}>Menu</Text>
+                                        <Pressable style={styles.sidebarCloseButton} onPress={() => setIsSidebarOpen(false)}>
+                                            <Ionicons name="close" size={22} color="#111827" />
+                                        </Pressable>
+                                    </View>
+
+                                    <View style={styles.sidebarUserCard}>
+                                        <Text style={styles.sidebarUserName}>{user.fullName}</Text>
+                                        <Text style={styles.sidebarUserMeta}>{user.email}</Text>
+                                        <Text style={styles.sidebarUserMeta}>{user.role}</Text>
+                                    </View>
+
+                                    <Pressable style={styles.sidebarLink} onPress={() => {
+                                        setIsSidebarOpen(false);
+                                        router.replace('/home');
+                                    }}>
+                                        <Ionicons name="home-outline" size={20} color="#111827" />
+                                        <Text style={styles.sidebarLinkText}>Forside</Text>
+                                    </Pressable>
+
+                                    <Pressable style={styles.sidebarLink} onPress={() => {
+                                        setIsSidebarOpen(false);
+                                        router.replace('/chat');
+                                    }}>
+                                        <Ionicons name="chatbubble-ellipses-outline" size={20} color="#111827" />
+                                        <Text style={styles.sidebarLinkText}>Chat</Text>
+                                    </Pressable>
+
+                                    <Pressable style={styles.sidebarLink} onPress={() => {
+                                        setIsSidebarOpen(false);
+                                        router.push('/profile');
+                                    }}>
+                                        <Ionicons name="person-outline" size={20} color="#111827" />
+                                        <Text style={styles.sidebarLinkText}>Profil</Text>
+                                    </Pressable>
+
+                                    <Pressable style={styles.sidebarLink} onPress={() => {
+                                        setIsSidebarOpen(false);
+                                        router.push('/book-washing');
+                                    }}>
+                                        <MaterialCommunityIcons name="washing-machine" size={20} color="#111827" />
+                                        <Text style={styles.sidebarLinkText}>Vaskeri</Text>
+                                    </Pressable>
+
+                                    <Pressable style={styles.sidebarLink} onPress={() => {
+                                        setIsSidebarOpen(false);
+                                        router.push('/book-partyroom');
+                                    }}>
+                                        <MaterialCommunityIcons name="party-popper" size={20} color="#111827" />
+                                        <Text style={styles.sidebarLinkText}>Festsal</Text>
+                                    </Pressable>
+
+                                    <Pressable style={styles.sidebarLink} onPress={() => {
+                                        setIsSidebarOpen(false);
+                                        router.push('/faq');
+                                    }}>
+                                        <Ionicons name="help-circle-outline" size={20} color="#111827" />
+                                        <Text style={styles.sidebarLinkText}>FAQ</Text>
                                     </Pressable>
                                 </View>
 
-                                <View style={styles.sidebarUserCard}>
-                                    <Text style={styles.sidebarUserName}>{user.fullName}</Text>
-                                    <Text style={styles.sidebarUserMeta}>{user.email}</Text>
-                                    <Text style={styles.sidebarUserMeta}>{user.role}</Text>
-                                </View>
-
-                                <Pressable style={styles.sidebarLink} onPress={() => {
-                                    setIsSidebarOpen(false);
-                                    router.replace('/home');
-                                }}>
-                                    <Ionicons name="home-outline" size={20} color="#111827" />
-                                    <Text style={styles.sidebarLinkText}>Forside</Text>
-                                </Pressable>
-
-                                <Pressable style={styles.sidebarLink} onPress={() => {
-                                    setIsSidebarOpen(false);
-                                    router.replace('/chat');
-                                }}>
-                                    <Ionicons name="chatbubble-ellipses-outline" size={20} color="#111827" />
-                                    <Text style={styles.sidebarLinkText}>Chat</Text>
-                                </Pressable>
-
-                                <Pressable style={styles.sidebarLink} onPress={() => {
-                                    setIsSidebarOpen(false);
-                                    router.push('/profile');
-                                }}>
-                                    <Ionicons name="person-outline" size={20} color="#111827" />
-                                    <Text style={styles.sidebarLinkText}>Profil</Text>
-                                </Pressable>
-
-                                <Pressable style={styles.sidebarLink} onPress={() => {
-                                    setIsSidebarOpen(false);
-                                    router.push('/book-washing');
-                                }}>
-                                    <MaterialCommunityIcons name="washing-machine" size={20} color="#111827" />
-                                    <Text style={styles.sidebarLinkText}>Vaskeri</Text>
-                                </Pressable>
-
-                                <Pressable style={styles.sidebarLink} onPress={() => {
-                                    setIsSidebarOpen(false);
-                                    router.push('/book-partyroom');
-                                }}>
-                                    <MaterialCommunityIcons name="party-popper" size={20} color="#111827" />
-                                    <Text style={styles.sidebarLinkText}>Festsal</Text>
-                                </Pressable>
-
-                                <Pressable style={styles.sidebarLink} onPress={() => {
-                                    setIsSidebarOpen(false);
-                                    router.push('/faq');
-                                }}>
-                                    <Ionicons name="help-circle-outline" size={20} color="#111827" />
-                                    <Text style={styles.sidebarLinkText}>FAQ</Text>
+                                <Pressable style={styles.logoutButton} onPress={handleLogout}>
+                                    <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+                                    <Text style={styles.logoutButtonText}>Log ud</Text>
                                 </Pressable>
                             </View>
-
-                            <Pressable style={styles.logoutButton} onPress={handleLogout}>
-                                <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
-                                <Text style={styles.logoutButtonText}>Log ud</Text>
-                            </Pressable>
                         </View>
-                    </View>
-                </Modal>
+                    </Modal>
+                ) : null}
 
                 <Modal
                     transparent
@@ -954,6 +978,11 @@ export default function ChatScreen() {
                             <Pressable
                                 style={styles.detailHeaderIcon}
                                 onPress={() => {
+                                    if (isAdminEntry) {
+                                        navigateBackToAdmin();
+                                        return;
+                                    }
+
                                     setIsConversationOpen(false);
                                 }}
                             >
@@ -1054,18 +1083,28 @@ export default function ChatScreen() {
                 ) : (
                     <View style={styles.mainLayout}>
                         <View style={styles.header}>
-                            <Pressable style={styles.iconButton} onPress={() => setIsSidebarOpen(true)}>
-                                <Feather name="menu" size={22} color="#1F2937" />
-                            </Pressable>
+                            {isAdminEntry ? (
+                                <Pressable style={styles.iconButton} onPress={navigateBackToAdmin}>
+                                    <Ionicons name="arrow-back" size={22} color="#2563EB" />
+                                </Pressable>
+                            ) : (
+                                <Pressable style={styles.iconButton} onPress={() => setIsSidebarOpen(true)}>
+                                    <Feather name="menu" size={22} color="#1F2937" />
+                                </Pressable>
+                            )}
 
                             <View style={styles.headerTitleWrap}>
                                 <MaterialCommunityIcons name="chat" size={24} color="#2563EB" />
                                 <Text style={styles.headerTitle}>Chat</Text>
                             </View>
 
-                            <Pressable style={styles.iconButton} onPress={() => router.push('/new-chat')}>
-                                <Ionicons name="add" size={22} color="#2563EB" />
-                            </Pressable>
+                            {isAdminEntry ? (
+                                <View style={styles.iconButtonPlaceholder} />
+                            ) : (
+                                <Pressable style={styles.iconButton} onPress={() => router.push('/new-chat')}>
+                                    <Ionicons name="add" size={22} color="#2563EB" />
+                                </Pressable>
+                            )}
                         </View>
 
                         <ScrollView
@@ -1205,16 +1244,18 @@ export default function ChatScreen() {
                             )}
                         </ScrollView>
 
-                        <View style={styles.bottomNavLayer}>
-                            <BottomNav
-                                active="chat"
-                                onChatPress={() => router.replace('/chat')}
-                                onHomePress={() => router.replace('/home')}
-                                onWashingPress={() => router.push('/book-washing')}
-                                onPartyPress={() => router.push('/book-partyroom')}
-                                onProfilePress={() => router.push('/profile')}
-                            />
-                        </View>
+                        {!isAdminEntry ? (
+                            <View style={styles.bottomNavLayer}>
+                                <BottomNav
+                                    active="chat"
+                                    onChatPress={() => router.replace('/chat')}
+                                    onHomePress={() => router.replace('/home')}
+                                    onWashingPress={() => router.push('/book-washing')}
+                                    onPartyPress={() => router.push('/book-partyroom')}
+                                    onProfilePress={() => router.push('/profile')}
+                                />
+                            </View>
+                        ) : null}
                     </View>
                 )}
             </View>
@@ -1248,6 +1289,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#F9FAFB',
+    },
+    iconButtonPlaceholder: {
+        width: 36,
+        height: 36,
     },
     headerTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     headerTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
