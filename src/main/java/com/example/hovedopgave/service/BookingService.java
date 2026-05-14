@@ -1,13 +1,6 @@
 package com.example.hovedopgave.service;
 
-import com.example.hovedopgave.dto.BookingAvailabilityResponse;
-import com.example.hovedopgave.dto.BookingCreateRequest;
-import com.example.hovedopgave.dto.BookingFacilityAvailabilityResponse;
-import com.example.hovedopgave.dto.BookingResponse;
-import com.example.hovedopgave.dto.BookingTimeSlotResponse;
-import com.example.hovedopgave.dto.PartyRoomAvailabilityResponse;
-import com.example.hovedopgave.dto.PartyRoomBookingRequest;
-import com.example.hovedopgave.dto.PartyRoomDayAvailabilityResponse;
+import com.example.hovedopgave.dto.*;
 import com.example.hovedopgave.model.Booking;
 import com.example.hovedopgave.model.Facility;
 import com.example.hovedopgave.model.User;
@@ -20,8 +13,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
-import java.time.temporal.TemporalAdjusters;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

@@ -1,22 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {Ionicons} from '@expo/vector-icons';
+import {useFocusEffect} from '@react-navigation/native';
+import {useRouter} from 'expo-router';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
-import { useAuth } from '@/context/AuthContext';
-import { ChatUserSearchDto, createChatGroup, searchChatUsers } from '@/lib/api';
+import {useAuth} from '@/context/AuthContext';
+import {ChatUserSearchDto, createChatGroup, searchChatUsers} from '@/lib/api';
 
 type GroupFieldErrors = {
     name?: string;
@@ -26,7 +16,7 @@ type GroupFieldErrors = {
 
 export default function NewGroupScreen() {
     const router = useRouter();
-    const { user } = useAuth();
+    const {user} = useAuth();
     const [groupName, setGroupName] = useState('');
     const [description, setDescription] = useState('');
     const [fieldErrors, setFieldErrors] = useState<GroupFieldErrors>({});
@@ -81,7 +71,7 @@ export default function NewGroupScreen() {
                 return currentMembers.filter((member) => member.userId !== chatUser.userId);
             }
 
-            setFieldErrors((currentErrors) => ({ ...currentErrors, memberUserIds: undefined }));
+            setFieldErrors((currentErrors) => ({...currentErrors, memberUserIds: undefined}));
             return [...currentMembers, chatUser];
         });
     };
@@ -149,12 +139,12 @@ export default function NewGroupScreen() {
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Tilføj medlemmer</Text>
                             <Pressable onPress={() => setIsMemberModalOpen(false)}>
-                                <Ionicons name="close" size={22} color="#111827" />
+                                <Ionicons name="close" size={22} color="#111827"/>
                             </Pressable>
                         </View>
 
                         <View style={styles.modalSearch}>
-                            <Ionicons name="search" size={18} color="#9CA3AF" />
+                            <Ionicons name="search" size={18} color="#9CA3AF"/>
                             <TextInput
                                 style={styles.modalSearchInput}
                                 placeholder="Søg efter en person"
@@ -166,7 +156,7 @@ export default function NewGroupScreen() {
 
                         <ScrollView showsVerticalScrollIndicator={false}>
                             {loadingUsers ? (
-                                <ActivityIndicator style={styles.loader} />
+                                <ActivityIndicator style={styles.loader}/>
                             ) : users.length === 0 ? (
                                 <Text style={styles.emptyText}>Ingen brugere matcher din søgning.</Text>
                             ) : (
@@ -212,14 +202,14 @@ export default function NewGroupScreen() {
             >
                 <View style={styles.header}>
                     <Pressable style={styles.backButton} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={22} color="#2563EB" />
+                        <Ionicons name="arrow-back" size={22} color="#2563EB"/>
                     </Pressable>
                     <Text style={styles.title}>Ny gruppe</Text>
-                    <View style={styles.headerSpacer} />
+                    <View style={styles.headerSpacer}/>
                 </View>
 
                 <View style={styles.iconCircle}>
-                    <Ionicons name="people" size={34} color="#1E3A8A" />
+                    <Ionicons name="people" size={34} color="#1E3A8A"/>
                 </View>
 
                 <Text style={styles.label}>Gruppenavn</Text>
@@ -230,7 +220,7 @@ export default function NewGroupScreen() {
                     value={groupName}
                     onChangeText={(value) => {
                         setGroupName(value);
-                        setFieldErrors((currentErrors) => ({ ...currentErrors, name: undefined }));
+                        setFieldErrors((currentErrors) => ({...currentErrors, name: undefined}));
                     }}
                 />
                 {fieldErrors.name ? <Text style={styles.fieldError}>{fieldErrors.name}</Text> : null}
@@ -243,7 +233,7 @@ export default function NewGroupScreen() {
                     value={description}
                     onChangeText={(value) => {
                         setDescription(value);
-                        setFieldErrors((currentErrors) => ({ ...currentErrors, description: undefined }));
+                        setFieldErrors((currentErrors) => ({...currentErrors, description: undefined}));
                     }}
                     multiline
                 />
@@ -252,7 +242,7 @@ export default function NewGroupScreen() {
                 <View style={styles.memberHeader}>
                     <Text style={styles.label}>Tilføj medlemmer</Text>
                     <Pressable style={styles.addButton} onPress={() => setIsMemberModalOpen(true)}>
-                        <Ionicons name="add" size={22} color="#2563EB" />
+                        <Ionicons name="add" size={22} color="#2563EB"/>
                     </Pressable>
                 </View>
 
@@ -264,7 +254,7 @@ export default function NewGroupScreen() {
                             <View key={member.userId} style={styles.selectedChip}>
                                 <Text style={styles.selectedChipText}>{member.fullName}</Text>
                                 <Pressable onPress={() => removeMember(member.userId)}>
-                                    <Ionicons name="close" size={16} color="#374151" />
+                                    <Ionicons name="close" size={16} color="#374151"/>
                                 </Pressable>
                             </View>
                         ))}
@@ -278,7 +268,7 @@ export default function NewGroupScreen() {
                     disabled={creatingGroup}
                 >
                     {creatingGroup ? (
-                        <ActivityIndicator color="#FFFFFF" />
+                        <ActivityIndicator color="#FFFFFF"/>
                     ) : (
                         <Text style={styles.submitButtonText}>Opret gruppe</Text>
                     )}
@@ -289,9 +279,9 @@ export default function NewGroupScreen() {
 }
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
-    container: { flex: 1, backgroundColor: '#FFFFFF' },
-    content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 },
+    safeArea: {flex: 1, backgroundColor: '#FFFFFF'},
+    container: {flex: 1, backgroundColor: '#FFFFFF'},
+    content: {paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32},
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -304,8 +294,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    headerSpacer: { width: 36, height: 36 },
-    title: { fontSize: 24, fontWeight: '700', color: '#111827' },
+    headerSpacer: {width: 36, height: 36},
+    title: {fontSize: 24, fontWeight: '700', color: '#111827'},
     iconCircle: {
         alignSelf: 'center',
         width: 88,
@@ -316,7 +306,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: 26,
     },
-    label: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 10 },
+    label: {fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 10},
     input: {
         minHeight: 52,
         borderRadius: 14,
@@ -333,8 +323,8 @@ const styles = StyleSheet.create({
         textAlignVertical: 'top',
         paddingTop: 14,
     },
-    inputError: { borderColor: '#DC2626' },
-    fieldError: { fontSize: 12, color: '#DC2626', marginBottom: 12 },
+    inputError: {borderColor: '#DC2626'},
+    fieldError: {fontSize: 12, color: '#DC2626', marginBottom: 12},
     memberHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -350,7 +340,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    memberHint: { fontSize: 14, color: '#6B7280', marginBottom: 12 },
+    memberHint: {fontSize: 14, color: '#6B7280', marginBottom: 12},
     selectedMembers: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -366,7 +356,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
     },
-    selectedChipText: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
+    selectedChipText: {fontSize: 13, fontWeight: '600', color: '#1F2937'},
     submitButton: {
         minHeight: 52,
         borderRadius: 14,
@@ -375,8 +365,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 18,
     },
-    submitButtonDisabled: { opacity: 0.7 },
-    submitButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+    submitButtonDisabled: {opacity: 0.7},
+    submitButtonText: {fontSize: 16, fontWeight: '700', color: '#FFFFFF'},
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(17, 24, 39, 0.28)',
@@ -397,7 +387,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 14,
     },
-    modalTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
+    modalTitle: {fontSize: 20, fontWeight: '700', color: '#111827'},
     modalSearch: {
         minHeight: 48,
         borderRadius: 16,
@@ -408,9 +398,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         marginBottom: 16,
     },
-    modalSearchInput: { flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0 },
-    loader: { marginTop: 18 },
-    emptyText: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+    modalSearchInput: {flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0},
+    loader: {marginTop: 18},
+    emptyText: {fontSize: 14, color: '#6B7280', lineHeight: 20},
     memberRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -425,8 +415,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    memberAvatarText: { fontSize: 15, fontWeight: '700', color: '#1D4ED8' },
-    memberTextWrap: { flex: 1 },
-    memberName: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
-    memberSubtitle: { fontSize: 13, color: '#6B7280' },
+    memberAvatarText: {fontSize: 15, fontWeight: '700', color: '#1D4ED8'},
+    memberTextWrap: {flex: 1},
+    memberName: {fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2},
+    memberSubtitle: {fontSize: 13, color: '#6B7280'},
 });

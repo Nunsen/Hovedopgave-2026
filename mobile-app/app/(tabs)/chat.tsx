@@ -1,41 +1,31 @@
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {Feather, Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
+import {useFocusEffect} from '@react-navigation/native';
+import {useLocalSearchParams, useRouter} from 'expo-router';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,} from 'react-native';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import { BottomNav } from '@/components/navigation/bottom-nav';
-import { useAuth } from '@/context/AuthContext';
+import {BottomNav} from '@/components/navigation/bottom-nav';
+import {useAuth} from '@/context/AuthContext';
 import {
     addChatGroupMembers,
     ChatGroupDto,
     ChatMessageDto,
     ChatOverviewDto,
+    ChatUserSearchDto,
     createChatMessage,
-    deleteDirectChatForUser,
     deleteChatGroup,
+    deleteDirectChatForUser,
     getChatGroup,
-    getUserProfile,
     getChatMessages,
     getChatOverview,
+    getUserProfile,
     joinChatGroup,
     leaveChatGroup,
     searchChatUsers,
-    ChatUserSearchDto,
     UserProfileDto,
 } from '@/lib/api';
-import { type ChatStompClient, createChatClient } from '@/lib/chat';
+import {type ChatStompClient, createChatClient} from '@/lib/chat';
 
 type ChatTab = 'Samtaler' | 'Grupper';
 
@@ -49,17 +39,17 @@ function formatConversationTime(value: string | null) {
     const dayDiff = Math.round((startOfToday.getTime() - startOfTarget.getTime()) / 86400000);
 
     if (dayDiff === 0) {
-        return date.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString('da-DK', {hour: '2-digit', minute: '2-digit'});
     }
 
     if (dayDiff === 1) return 'I går';
 
     if (dayDiff > 1 && dayDiff < 7) {
-        const weekday = date.toLocaleDateString('da-DK', { weekday: 'long' });
+        const weekday = date.toLocaleDateString('da-DK', {weekday: 'long'});
         return weekday.charAt(0).toUpperCase() + weekday.slice(1);
     }
 
-    return date.toLocaleDateString('da-DK', { day: '2-digit', month: '2-digit' });
+    return date.toLocaleDateString('da-DK', {day: '2-digit', month: '2-digit'});
 }
 
 function formatMessageTime(value: string) {
@@ -120,7 +110,7 @@ export default function ChatScreen() {
         requestId?: string;
     }>();
 
-    const { isLoading, logout, user } = useAuth();
+    const {isLoading, logout, user} = useAuth();
     const [activeTab, setActiveTab] = useState<ChatTab>('Samtaler');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isConversationOpen, setIsConversationOpen] = useState(false);
@@ -181,7 +171,7 @@ export default function ChatScreen() {
             return;
         }
 
-        const nextOverview = result.data ?? { directConversations: [], joinedGroups: [], availableGroups: [] };
+        const nextOverview = result.data ?? {directConversations: [], joinedGroups: [], availableGroups: []};
         setOverview(nextOverview);
         setHiddenDirectGroupIds((currentIds) =>
             currentIds.filter(
@@ -292,7 +282,7 @@ export default function ChatScreen() {
     useEffect(() => {
         if (!user || joinedGroupIds.length === 0) return undefined;
 
-        const { client, disconnect } = createChatClient({
+        const {client, disconnect} = createChatClient({
             groupIds: joinedGroupIds,
             onError: (message) => {
                 console.warn('Chat realtime connection failed:', message);
@@ -377,7 +367,7 @@ export default function ChatScreen() {
         if (!user) return;
 
         setJoiningGroupId(groupId);
-        const result = await joinChatGroup(groupId, { userId: user.userId });
+        const result = await joinChatGroup(groupId, {userId: user.userId});
         setJoiningGroupId(null);
 
         if (result.error) {
@@ -582,7 +572,7 @@ export default function ChatScreen() {
             return;
         }
 
-        const result = await leaveChatGroup(groupInfoConversation.groupId, { userId: user.userId });
+        const result = await leaveChatGroup(groupInfoConversation.groupId, {userId: user.userId});
         if (result.error) {
             Alert.alert('Kunne ikke forlade gruppen', result.error);
             return;
@@ -622,7 +612,7 @@ export default function ChatScreen() {
             return;
         }
 
-        const result = await deleteDirectChatForUser(selectedConversation.groupId, { userId: user.userId });
+        const result = await deleteDirectChatForUser(selectedConversation.groupId, {userId: user.userId});
         if (result.error) {
             Alert.alert('Kunne ikke slette samtalen', result.error);
             return;
@@ -680,7 +670,7 @@ export default function ChatScreen() {
     if (isLoading || loadingOverview) {
         return (
             <SafeAreaView style={styles.loadingContainer}>
-                <ActivityIndicator />
+                <ActivityIndicator/>
             </SafeAreaView>
         );
     }
@@ -698,14 +688,15 @@ export default function ChatScreen() {
                         onRequestClose={() => setIsSidebarOpen(false)}
                     >
                         <View style={styles.sidebarOverlay}>
-                            <Pressable style={styles.sidebarBackdrop} onPress={() => setIsSidebarOpen(false)} />
+                            <Pressable style={styles.sidebarBackdrop} onPress={() => setIsSidebarOpen(false)}/>
 
                             <View style={styles.sidebarPanel}>
                                 <View>
                                     <View style={styles.sidebarHeader}>
                                         <Text style={styles.sidebarTitle}>Menu</Text>
-                                        <Pressable style={styles.sidebarCloseButton} onPress={() => setIsSidebarOpen(false)}>
-                                            <Ionicons name="close" size={22} color="#111827" />
+                                        <Pressable style={styles.sidebarCloseButton}
+                                                   onPress={() => setIsSidebarOpen(false)}>
+                                            <Ionicons name="close" size={22} color="#111827"/>
                                         </Pressable>
                                     </View>
 
@@ -719,7 +710,7 @@ export default function ChatScreen() {
                                         setIsSidebarOpen(false);
                                         router.replace('/home');
                                     }}>
-                                        <Ionicons name="home-outline" size={20} color="#111827" />
+                                        <Ionicons name="home-outline" size={20} color="#111827"/>
                                         <Text style={styles.sidebarLinkText}>Forside</Text>
                                     </Pressable>
 
@@ -727,7 +718,7 @@ export default function ChatScreen() {
                                         setIsSidebarOpen(false);
                                         router.replace('/chat');
                                     }}>
-                                        <Ionicons name="chatbubble-ellipses-outline" size={20} color="#111827" />
+                                        <Ionicons name="chatbubble-ellipses-outline" size={20} color="#111827"/>
                                         <Text style={styles.sidebarLinkText}>Chat</Text>
                                     </Pressable>
 
@@ -735,7 +726,7 @@ export default function ChatScreen() {
                                         setIsSidebarOpen(false);
                                         router.push('/profile');
                                     }}>
-                                        <Ionicons name="person-outline" size={20} color="#111827" />
+                                        <Ionicons name="person-outline" size={20} color="#111827"/>
                                         <Text style={styles.sidebarLinkText}>Profil</Text>
                                     </Pressable>
 
@@ -743,7 +734,7 @@ export default function ChatScreen() {
                                         setIsSidebarOpen(false);
                                         router.push('/book-washing');
                                     }}>
-                                        <MaterialCommunityIcons name="washing-machine" size={20} color="#111827" />
+                                        <MaterialCommunityIcons name="washing-machine" size={20} color="#111827"/>
                                         <Text style={styles.sidebarLinkText}>Vaskeri</Text>
                                     </Pressable>
 
@@ -751,7 +742,7 @@ export default function ChatScreen() {
                                         setIsSidebarOpen(false);
                                         router.push('/book-partyroom');
                                     }}>
-                                        <MaterialCommunityIcons name="party-popper" size={20} color="#111827" />
+                                        <MaterialCommunityIcons name="party-popper" size={20} color="#111827"/>
                                         <Text style={styles.sidebarLinkText}>Festsal</Text>
                                     </Pressable>
 
@@ -759,13 +750,13 @@ export default function ChatScreen() {
                                         setIsSidebarOpen(false);
                                         router.push('/faq');
                                     }}>
-                                        <Ionicons name="help-circle-outline" size={20} color="#111827" />
+                                        <Ionicons name="help-circle-outline" size={20} color="#111827"/>
                                         <Text style={styles.sidebarLinkText}>FAQ</Text>
                                     </Pressable>
                                 </View>
 
                                 <Pressable style={styles.logoutButton} onPress={handleLogout}>
-                                    <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+                                    <Ionicons name="log-out-outline" size={20} color="#FFFFFF"/>
                                     <Text style={styles.logoutButtonText}>Log ud</Text>
                                 </Pressable>
                             </View>
@@ -800,23 +791,24 @@ export default function ChatScreen() {
                                         setResidentInfo(null);
                                     }}
                                 >
-                                    <Ionicons name="close" size={22} color="#111827" />
+                                    <Ionicons name="close" size={22} color="#111827"/>
                                 </Pressable>
                             </View>
 
                             {loadingResidentInfo ? (
-                                <ActivityIndicator style={styles.infoLoader} />
+                                <ActivityIndicator style={styles.infoLoader}/>
                             ) : residentInfo ? (
                                 <View style={styles.infoContent}>
                                     <View style={styles.infoAvatar}>
-                                        <Ionicons name="person" size={28} color="#2563EB" />
+                                        <Ionicons name="person" size={28} color="#2563EB"/>
                                     </View>
                                     <Text style={styles.infoName}>{residentInfo.fullName}</Text>
                                     <Text style={styles.infoMetaLabel}>Lejlighedsnr.</Text>
                                     <Text style={styles.infoMetaValue}>
                                         {residentInfo.apartmentNumber?.trim() || 'Ikke angivet'}
                                     </Text>
-                                    <Pressable style={styles.deleteGroupButton} onPress={handleDeleteDirectConversation}>
+                                    <Pressable style={styles.deleteGroupButton}
+                                               onPress={handleDeleteDirectConversation}>
                                         <Text style={styles.deleteGroupButtonText}>Slet samtale</Text>
                                     </Pressable>
                                 </View>
@@ -834,20 +826,20 @@ export default function ChatScreen() {
                     onRequestClose={() => setIsGroupInfoOpen(false)}
                 >
                     <View style={styles.infoOverlay}>
-                        <Pressable style={styles.infoBackdrop} onPress={() => setIsGroupInfoOpen(false)} />
+                        <Pressable style={styles.infoBackdrop} onPress={() => setIsGroupInfoOpen(false)}/>
 
                         <View style={styles.infoCard}>
                             <View style={styles.infoHeader}>
                                 <Text style={styles.infoTitle}>Gruppeinfo</Text>
                                 <Pressable onPress={() => setIsGroupInfoOpen(false)}>
-                                    <Ionicons name="close" size={22} color="#111827" />
+                                    <Ionicons name="close" size={22} color="#111827"/>
                                 </Pressable>
                             </View>
 
                             {groupInfoConversation ? (
                                 <View style={styles.infoContent}>
                                     <View style={[styles.infoAvatar, styles.centeredInfoAvatar]}>
-                                        <Ionicons name="people" size={28} color="#2563EB" />
+                                        <Ionicons name="people" size={28} color="#2563EB"/>
                                     </View>
                                     <Text style={styles.infoName}>{groupInfoConversation.name}</Text>
                                     <Text style={styles.infoMetaLabel}>Beskrivelse</Text>
@@ -867,7 +859,7 @@ export default function ChatScreen() {
                                             onPress={handleOpenGroupMemberModal}
                                             hitSlop={10}
                                         >
-                                            <Ionicons name="add" size={22} color="#2563EB" />
+                                            <Ionicons name="add" size={22} color="#2563EB"/>
                                         </Pressable>
                                     </View>
 
@@ -877,7 +869,7 @@ export default function ChatScreen() {
                                                 <View key={member.userId} style={styles.selectedChip}>
                                                     <Text style={styles.selectedChipText}>{member.fullName}</Text>
                                                     <Pressable onPress={() => toggleSelectedGroupMember(member)}>
-                                                        <Ionicons name="close" size={16} color="#374151" />
+                                                        <Ionicons name="close" size={16} color="#374151"/>
                                                     </Pressable>
                                                 </View>
                                             ))}
@@ -905,12 +897,12 @@ export default function ChatScreen() {
                             <View style={styles.modalHeader}>
                                 <Text style={styles.modalTitle}>Tilføj medlemmer</Text>
                                 <Pressable onPress={() => setIsGroupMemberModalOpen(false)}>
-                                    <Ionicons name="close" size={22} color="#111827" />
+                                    <Ionicons name="close" size={22} color="#111827"/>
                                 </Pressable>
                             </View>
 
                             <View style={styles.modalSearch}>
-                                <Ionicons name="search" size={18} color="#9CA3AF" />
+                                <Ionicons name="search" size={18} color="#9CA3AF"/>
                                 <TextInput
                                     style={styles.modalSearchInput}
                                     placeholder="Søg efter en person"
@@ -922,7 +914,7 @@ export default function ChatScreen() {
 
                             <ScrollView showsVerticalScrollIndicator={false}>
                                 {loadingGroupUsers ? (
-                                    <ActivityIndicator style={styles.loader} />
+                                    <ActivityIndicator style={styles.loader}/>
                                 ) : groupUserResults.length === 0 ? (
                                     <Text style={styles.emptyText}>Ingen brugere matcher din søgning.</Text>
                                 ) : (
@@ -963,7 +955,7 @@ export default function ChatScreen() {
                                 disabled={addingGroupMembers}
                             >
                                 {addingGroupMembers ? (
-                                    <ActivityIndicator color="#FFFFFF" />
+                                    <ActivityIndicator color="#FFFFFF"/>
                                 ) : (
                                     <Text style={styles.submitButtonText}>Tilføj valgte medlemmer</Text>
                                 )}
@@ -986,7 +978,7 @@ export default function ChatScreen() {
                                     setIsConversationOpen(false);
                                 }}
                             >
-                                <Ionicons name="arrow-back" size={22} color="#2563EB" />
+                                <Ionicons name="arrow-back" size={22} color="#2563EB"/>
                             </Pressable>
 
                             <View style={styles.detailHeaderContent}>
@@ -1001,7 +993,7 @@ export default function ChatScreen() {
                             <View style={styles.detailHeaderIcon}>
                                 {selectedConversation.groupType === 'DIRECT' ? (
                                     <Pressable style={styles.detailHeaderIcon} onPress={handleOpenResidentInfo}>
-                                        <Ionicons name="person-outline" size={22} color="#2563EB" />
+                                        <Ionicons name="person-outline" size={22} color="#2563EB"/>
                                     </Pressable>
                                 ) : (
                                     <Pressable
@@ -1011,7 +1003,7 @@ export default function ChatScreen() {
                                             setIsGroupInfoOpen(true);
                                         }}
                                     >
-                                        <Ionicons name="people-outline" size={22} color="#2563EB" />
+                                        <Ionicons name="people-outline" size={22} color="#2563EB"/>
                                     </Pressable>
                                 )}
                             </View>
@@ -1022,16 +1014,16 @@ export default function ChatScreen() {
                             style={styles.detailMessages}
                             contentContainerStyle={[
                                 styles.detailMessagesContent,
-                                { paddingBottom: insets.bottom + 24 },
+                                {paddingBottom: insets.bottom + 24},
                             ]}
                             showsVerticalScrollIndicator={false}
                             keyboardShouldPersistTaps="handled"
                             onContentSizeChange={() => {
-                                messagesScrollRef.current?.scrollToEnd({ animated: true });
+                                messagesScrollRef.current?.scrollToEnd({animated: true});
                             }}
                         >
                             {loadingMessages ? (
-                                <ActivityIndicator style={styles.inlineLoader} />
+                                <ActivityIndicator style={styles.inlineLoader}/>
                             ) : messages.length === 0 ? (
                                 <Text style={styles.emptyText}>Der er ingen beskeder endnu.</Text>
                             ) : (
@@ -1039,20 +1031,27 @@ export default function ChatScreen() {
                                     const ownMessage = message.userId === user.userId;
 
                                     return (
-                                        <View key={`${message.messageId}-${message.sentAt}`} style={styles.detailMessageBlock}>
-                                            <View style={[styles.detailMessageRow, ownMessage ? styles.detailMessageRowOwn : null]}>
-                                                {!ownMessage ? <View style={styles.detailAvatar} /> : null}
+                                        <View key={`${message.messageId}-${message.sentAt}`}
+                                              style={styles.detailMessageBlock}>
+                                            <View
+                                                style={[styles.detailMessageRow, ownMessage ? styles.detailMessageRowOwn : null]}>
+                                                {!ownMessage ? <View style={styles.detailAvatar}/> : null}
 
-                                                <View style={[styles.detailBubbleWrap, ownMessage ? styles.detailBubbleWrapOwn : null]}>
-                                                    <View style={[styles.detailBubble, ownMessage ? styles.detailBubbleOwn : null]}>
-                                                        <Text style={[styles.detailAuthor, ownMessage ? styles.detailAuthorOwn : null]}>
+                                                <View
+                                                    style={[styles.detailBubbleWrap, ownMessage ? styles.detailBubbleWrapOwn : null]}>
+                                                    <View
+                                                        style={[styles.detailBubble, ownMessage ? styles.detailBubbleOwn : null]}>
+                                                        <Text
+                                                            style={[styles.detailAuthor, ownMessage ? styles.detailAuthorOwn : null]}>
                                                             {ownMessage ? 'Dig' : message.authorName}
                                                         </Text>
-                                                        <Text style={[styles.detailMessageText, ownMessage ? styles.detailMessageTextOwn : null]}>
+                                                        <Text
+                                                            style={[styles.detailMessageText, ownMessage ? styles.detailMessageTextOwn : null]}>
                                                             {message.message}
                                                         </Text>
                                                     </View>
-                                                    <Text style={[styles.detailTime, ownMessage ? styles.detailTimeOwn : null]}>
+                                                    <Text
+                                                        style={[styles.detailTime, ownMessage ? styles.detailTimeOwn : null]}>
                                                         {formatMessageTime(message.sentAt)}
                                                     </Text>
                                                 </View>
@@ -1063,7 +1062,7 @@ export default function ChatScreen() {
                             )}
                         </ScrollView>
 
-                        <View style={[styles.detailComposerBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+                        <View style={[styles.detailComposerBar, {paddingBottom: Math.max(insets.bottom, 8)}]}>
                             <TextInput
                                 style={styles.detailComposerInput}
                                 placeholder="Skriv en besked..."
@@ -1076,7 +1075,7 @@ export default function ChatScreen() {
                                 onPress={handleSendMessage}
                                 disabled={!messageText.trim()}
                             >
-                                <Ionicons name="send" size={18} color="#FFFFFF" />
+                                <Ionicons name="send" size={18} color="#FFFFFF"/>
                             </Pressable>
                         </View>
                     </View>
@@ -1085,24 +1084,24 @@ export default function ChatScreen() {
                         <View style={styles.header}>
                             {isAdminEntry ? (
                                 <Pressable style={styles.iconButton} onPress={navigateBackToAdmin}>
-                                    <Ionicons name="arrow-back" size={22} color="#2563EB" />
+                                    <Ionicons name="arrow-back" size={22} color="#2563EB"/>
                                 </Pressable>
                             ) : (
                                 <Pressable style={styles.iconButton} onPress={() => setIsSidebarOpen(true)}>
-                                    <Feather name="menu" size={22} color="#1F2937" />
+                                    <Feather name="menu" size={22} color="#1F2937"/>
                                 </Pressable>
                             )}
 
                             <View style={styles.headerTitleWrap}>
-                                <MaterialCommunityIcons name="chat" size={24} color="#2563EB" />
+                                <MaterialCommunityIcons name="chat" size={24} color="#2563EB"/>
                                 <Text style={styles.headerTitle}>Chat</Text>
                             </View>
 
                             {isAdminEntry ? (
-                                <View style={styles.iconButtonPlaceholder} />
+                                <View style={styles.iconButtonPlaceholder}/>
                             ) : (
                                 <Pressable style={styles.iconButton} onPress={() => router.push('/new-chat')}>
-                                    <Ionicons name="add" size={22} color="#2563EB" />
+                                    <Ionicons name="add" size={22} color="#2563EB"/>
                                 </Pressable>
                             )}
                         </View>
@@ -1123,7 +1122,8 @@ export default function ChatScreen() {
                                             setIsConversationOpen(false);
                                         }}
                                     >
-                                        <Text style={[styles.segmentButtonText, activeTab === tab ? styles.segmentButtonTextActive : null]}>
+                                        <Text
+                                            style={[styles.segmentButtonText, activeTab === tab ? styles.segmentButtonTextActive : null]}>
                                             {tab}
                                         </Text>
                                     </Pressable>
@@ -1131,7 +1131,7 @@ export default function ChatScreen() {
                             </View>
 
                             <View style={styles.searchField}>
-                                <Feather name="search" size={18} color="#9CA3AF" />
+                                <Feather name="search" size={18} color="#9CA3AF"/>
                                 <TextInput
                                     style={styles.searchInput}
                                     placeholder={activeTab === 'Samtaler' ? 'Søg efter samtaler' : 'Søg efter grupper'}
@@ -1144,7 +1144,8 @@ export default function ChatScreen() {
                             {activeTab === 'Samtaler' ? (
                                 <View style={styles.conversationListCard}>
                                     {filteredConversationOverview.length === 0 ? (
-                                        <Text style={styles.emptyStateText}>Du har ingen samtaler eller grupper endnu.</Text>
+                                        <Text style={styles.emptyStateText}>Du har ingen samtaler eller grupper
+                                            endnu.</Text>
                                     ) : (
                                         filteredConversationOverview.map((group, index) => (
                                             <Pressable
@@ -1163,7 +1164,8 @@ export default function ChatScreen() {
                                                 <View style={styles.conversationContent}>
                                                     <View style={styles.conversationTopRow}>
                                                         <Text style={styles.conversationName}>{group.name}</Text>
-                                                        <Text style={styles.conversationTime}>{formatConversationTime(group.lastMessageAt)}</Text>
+                                                        <Text
+                                                            style={styles.conversationTime}>{formatConversationTime(group.lastMessageAt)}</Text>
                                                     </View>
 
                                                     <Text style={styles.conversationPreview} numberOfLines={1}>
@@ -1179,7 +1181,8 @@ export default function ChatScreen() {
                                     <View style={styles.sectionBlock}>
                                         <Text style={styles.sectionHeading}>Dine grupper</Text>
                                         {filteredJoinedGroups.length === 0 ? (
-                                            <Text style={styles.emptyStateText}>Du er ikke medlem af nogen grupper endnu.</Text>
+                                            <Text style={styles.emptyStateText}>Du er ikke medlem af nogen grupper
+                                                endnu.</Text>
                                         ) : (
                                             <View style={styles.conversationListCard}>
                                                 {filteredJoinedGroups.map((group, index) => (
@@ -1189,13 +1192,15 @@ export default function ChatScreen() {
                                                         onPress={() => handleOpenConversation(group, 'Grupper')}
                                                     >
                                                         <View style={styles.conversationAvatar}>
-                                                            <Ionicons name="people" size={20} color="#2563EB" />
+                                                            <Ionicons name="people" size={20} color="#2563EB"/>
                                                         </View>
 
                                                         <View style={styles.conversationContent}>
                                                             <View style={styles.conversationTopRow}>
-                                                                <Text style={styles.conversationName}>{group.name}</Text>
-                                                                <Text style={styles.conversationTime}>{formatConversationTime(group.lastMessageAt)}</Text>
+                                                                <Text
+                                                                    style={styles.conversationName}>{group.name}</Text>
+                                                                <Text
+                                                                    style={styles.conversationTime}>{formatConversationTime(group.lastMessageAt)}</Text>
                                                             </View>
 
                                                             <Text style={styles.conversationPreview} numberOfLines={1}>
@@ -1211,15 +1216,18 @@ export default function ChatScreen() {
                                     <View style={styles.sectionBlock}>
                                         <Text style={styles.sectionHeading}>Find grupper</Text>
                                         {filteredAvailableGroups.length === 0 ? (
-                                            <Text style={styles.emptyText}>Der er ingen andre grupper at tilmelde sig lige nu.</Text>
+                                            <Text style={styles.emptyText}>Der er ingen andre grupper at tilmelde sig
+                                                lige nu.</Text>
                                         ) : (
                                             <View style={styles.availableList}>
                                                 {filteredAvailableGroups.map((group) => (
                                                     <View key={group.groupId} style={styles.availableCard}>
                                                         <View style={styles.availableCardTop}>
                                                             <View style={styles.availableCardHeaderText}>
-                                                                <Text style={styles.availableCardTitle}>{group.name}</Text>
-                                                                <Text style={styles.availableCardMeta}>{group.memberCount} medlemmer</Text>
+                                                                <Text
+                                                                    style={styles.availableCardTitle}>{group.name}</Text>
+                                                                <Text
+                                                                    style={styles.availableCardMeta}>{group.memberCount} medlemmer</Text>
                                                             </View>
 
                                                             <Pressable
@@ -1233,8 +1241,10 @@ export default function ChatScreen() {
                                                             </Pressable>
                                                         </View>
 
-                                                        <Text style={styles.availableCardDescription}>{group.description}</Text>
-                                                        <Text style={styles.availableCardCreator}>Oprettet af {group.createdByName}</Text>
+                                                        <Text
+                                                            style={styles.availableCardDescription}>{group.description}</Text>
+                                                        <Text style={styles.availableCardCreator}>Oprettet
+                                                            af {group.createdByName}</Text>
                                                     </View>
                                                 ))}
                                             </View>
@@ -1264,16 +1274,16 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
-    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
+    safeArea: {flex: 1, backgroundColor: '#FFFFFF'},
+    loadingContainer: {flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF'},
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
         paddingHorizontal: 14,
         paddingTop: 10,
     },
-    mainLayout: { flex: 1 },
-    mainScroll: { flex: 1 },
+    mainLayout: {flex: 1},
+    mainScroll: {flex: 1},
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1294,8 +1304,8 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
     },
-    headerTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    headerTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
+    headerTitleWrap: {flexDirection: 'row', alignItems: 'center', gap: 10},
+    headerTitle: {fontSize: 20, fontWeight: '800', color: '#111827'},
     scrollContent: {
         paddingTop: 14,
         paddingBottom: 24,
@@ -1324,9 +1334,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    segmentButtonActive: { backgroundColor: '#2F2F2F' },
-    segmentButtonText: { fontSize: 14, fontWeight: '700', color: '#6B7280' },
-    segmentButtonTextActive: { color: '#FFFFFF' },
+    segmentButtonActive: {backgroundColor: '#F3F4F6'},
+    segmentButtonText: {fontSize: 14, fontWeight: '700', color: '#6B7280'},
+    segmentButtonTextActive: {color: '#111827'},
     searchField: {
         height: 44,
         borderRadius: 16,
@@ -1339,7 +1349,7 @@ const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
         marginBottom: 14,
     },
-    searchInput: { flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0 },
+    searchInput: {flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0},
     conversationListCard: {
         borderWidth: 1,
         borderColor: '#E5E7EB',
@@ -1356,7 +1366,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#F3F4F6',
     },
-    conversationItemLast: { borderBottomWidth: 0 },
+    conversationItemLast: {borderBottomWidth: 0},
     conversationAvatar: {
         width: 44,
         height: 44,
@@ -1365,7 +1375,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    conversationContent: { flex: 1 },
+    conversationContent: {flex: 1},
     conversationTopRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -1373,13 +1383,13 @@ const styles = StyleSheet.create({
         marginBottom: 4,
         gap: 8,
     },
-    conversationName: { flex: 1, fontSize: 15, fontWeight: '700', color: '#111827' },
-    conversationTime: { fontSize: 12, color: '#6B7280' },
-    conversationPreview: { fontSize: 13, color: '#6B7280', lineHeight: 18 },
-    groupSectionWrap: { gap: 18 },
-    sectionBlock: { gap: 10 },
-    sectionHeading: { fontSize: 16, fontWeight: '800', color: '#111827' },
-    conversationScreen: { flex: 1, paddingTop: 2 },
+    conversationName: {flex: 1, fontSize: 15, fontWeight: '700', color: '#111827'},
+    conversationTime: {fontSize: 12, color: '#6B7280'},
+    conversationPreview: {fontSize: 13, color: '#6B7280', lineHeight: 18},
+    groupSectionWrap: {gap: 18},
+    sectionBlock: {gap: 10},
+    sectionHeading: {fontSize: 16, fontWeight: '800', color: '#111827'},
+    conversationScreen: {flex: 1, paddingTop: 2},
     detailHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1392,9 +1402,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    detailHeaderContent: { flex: 1 },
-    detailHeaderTitle: { fontSize: 18, fontWeight: '800', color: '#111827' },
-    detailHeaderSubtitle: { fontSize: 14, color: '#6B7280', marginTop: 2 },
+    detailHeaderContent: {flex: 1},
+    detailHeaderTitle: {fontSize: 18, fontWeight: '800', color: '#111827'},
+    detailHeaderSubtitle: {fontSize: 14, color: '#6B7280', marginTop: 2},
     infoOverlay: {
         flex: 1,
         justifyContent: 'center',
@@ -1417,8 +1427,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 20,
     },
-    infoTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
-    infoLoader: { marginVertical: 24 },
+    infoTitle: {fontSize: 20, fontWeight: '800', color: '#111827'},
+    infoLoader: {marginVertical: 24},
     infoContent: {
         alignItems: 'center',
     },
@@ -1460,33 +1470,33 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         alignSelf: 'stretch',
     },
-    detailMessages: { flex: 1 },
-    detailMessagesContent: { paddingTop: 10 },
-    inlineLoader: { marginVertical: 24 },
-    detailMessageBlock: { marginBottom: 12 },
-    detailMessageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
-    detailMessageRowOwn: { justifyContent: 'flex-end' },
+    detailMessages: {flex: 1},
+    detailMessagesContent: {paddingTop: 10},
+    inlineLoader: {marginVertical: 24},
+    detailMessageBlock: {marginBottom: 12},
+    detailMessageRow: {flexDirection: 'row', alignItems: 'flex-end', gap: 10},
+    detailMessageRowOwn: {justifyContent: 'flex-end'},
     detailAvatar: {
         width: 34,
         height: 34,
         borderRadius: 17,
         backgroundColor: '#E5E7EB',
     },
-    detailBubbleWrap: { maxWidth: '78%' },
-    detailBubbleWrapOwn: { alignItems: 'flex-end' },
+    detailBubbleWrap: {maxWidth: '78%'},
+    detailBubbleWrapOwn: {alignItems: 'flex-end'},
     detailBubble: {
         borderRadius: 18,
         backgroundColor: '#F5F7FB',
         paddingHorizontal: 14,
         paddingVertical: 12,
     },
-    detailBubbleOwn: { backgroundColor: '#2563EB' },
-    detailAuthor: { fontSize: 11, fontWeight: '700', color: '#4B5563', marginBottom: 4 },
-    detailAuthorOwn: { color: '#DBEAFE' },
-    detailMessageText: { fontSize: 15, lineHeight: 22, color: '#111827' },
-    detailMessageTextOwn: { color: '#FFFFFF' },
-    detailTime: { fontSize: 11, color: '#9CA3AF', marginTop: 6 },
-    detailTimeOwn: { textAlign: 'right' },
+    detailBubbleOwn: {backgroundColor: '#2563EB'},
+    detailAuthor: {fontSize: 11, fontWeight: '700', color: '#4B5563', marginBottom: 4},
+    detailAuthorOwn: {color: '#DBEAFE'},
+    detailMessageText: {fontSize: 15, lineHeight: 22, color: '#111827'},
+    detailMessageTextOwn: {color: '#FFFFFF'},
+    detailTime: {fontSize: 11, color: '#9CA3AF', marginTop: 6},
+    detailTimeOwn: {textAlign: 'right'},
     detailComposerBar: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1513,8 +1523,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#2563EB',
     },
-    sendButtonDisabled: { opacity: 0.6 },
-    availableList: { gap: 12 },
+    sendButtonDisabled: {opacity: 0.6},
+    availableList: {gap: 12},
     availableCard: {
         borderWidth: 1,
         borderColor: '#E5E7EB',
@@ -1529,11 +1539,11 @@ const styles = StyleSheet.create({
         gap: 12,
         marginBottom: 10,
     },
-    availableCardHeaderText: { flex: 1 },
-    availableCardTitle: { fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 4 },
-    availableCardMeta: { fontSize: 12, color: '#6B7280' },
-    availableCardDescription: { fontSize: 13, lineHeight: 20, color: '#374151', marginBottom: 8 },
-    availableCardCreator: { fontSize: 12, color: '#6B7280' },
+    availableCardHeaderText: {flex: 1},
+    availableCardTitle: {fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 4},
+    availableCardMeta: {fontSize: 12, color: '#6B7280'},
+    availableCardDescription: {fontSize: 13, lineHeight: 20, color: '#374151', marginBottom: 8},
+    availableCardCreator: {fontSize: 12, color: '#6B7280'},
     joinButton: {
         minHeight: 38,
         borderRadius: 12,
@@ -1542,8 +1552,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    joinButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-    emptyText: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+    joinButtonText: {color: '#FFFFFF', fontSize: 13, fontWeight: '700'},
+    emptyText: {fontSize: 14, color: '#6B7280', lineHeight: 20},
     emptyStateText: {
         fontSize: 14,
         color: '#6B7280',
@@ -1571,7 +1581,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 14,
     },
-    modalTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
+    modalTitle: {fontSize: 20, fontWeight: '700', color: '#111827'},
     modalSearch: {
         minHeight: 48,
         borderRadius: 16,
@@ -1582,8 +1592,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         marginBottom: 16,
     },
-    modalSearchInput: { flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0 },
-    loader: { marginTop: 18 },
+    modalSearchInput: {flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0},
+    loader: {marginTop: 18},
     memberRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1598,10 +1608,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    memberAvatarText: { fontSize: 15, fontWeight: '700', color: '#1D4ED8' },
-    memberTextWrap: { flex: 1 },
-    memberName: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 },
-    memberSubtitle: { fontSize: 13, color: '#6B7280' },
+    memberAvatarText: {fontSize: 15, fontWeight: '700', color: '#1D4ED8'},
+    memberTextWrap: {flex: 1},
+    memberName: {fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2},
+    memberSubtitle: {fontSize: 13, color: '#6B7280'},
     memberHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1623,7 +1633,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    memberHint: { fontSize: 14, color: '#6B7280', marginBottom: 12 },
+    memberHint: {fontSize: 14, color: '#6B7280', marginBottom: 12},
     selectedMembers: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -1639,7 +1649,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
     },
-    selectedChipText: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
+    selectedChipText: {fontSize: 13, fontWeight: '600', color: '#1F2937'},
     submitButton: {
         minHeight: 52,
         borderRadius: 14,
@@ -1648,8 +1658,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 18,
     },
-    submitButtonDisabled: { opacity: 0.7 },
-    submitButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+    submitButtonDisabled: {opacity: 0.7},
+    submitButtonText: {fontSize: 16, fontWeight: '700', color: '#FFFFFF'},
     leaveGroupButton: {
         alignSelf: 'stretch',
         minHeight: 48,
@@ -1682,8 +1692,8 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#991B1B',
     },
-    sidebarOverlay: { flex: 1, flexDirection: 'row-reverse', backgroundColor: 'rgba(17, 24, 39, 0.28)' },
-    sidebarBackdrop: { flex: 1 },
+    sidebarOverlay: {flex: 1, flexDirection: 'row-reverse', backgroundColor: 'rgba(17, 24, 39, 0.28)'},
+    sidebarBackdrop: {flex: 1},
     sidebarPanel: {
         width: 278,
         backgroundColor: '#FFFFFF',
@@ -1694,7 +1704,7 @@ const styles = StyleSheet.create({
         shadowColor: '#111827',
         shadowOpacity: 0.15,
         shadowRadius: 16,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: {width: 0, height: 4},
         elevation: 10,
     },
     sidebarHeader: {
@@ -1703,8 +1713,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 20,
     },
-    sidebarTitle: { fontSize: 22, fontWeight: '700', color: '#111827' },
-    sidebarCloseButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+    sidebarTitle: {fontSize: 22, fontWeight: '700', color: '#111827'},
+    sidebarCloseButton: {width: 36, height: 36, alignItems: 'center', justifyContent: 'center'},
     sidebarUserCard: {
         borderWidth: 1,
         borderColor: '#DBEAFE',
@@ -1713,8 +1723,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#EFF6FF',
         marginBottom: 18,
     },
-    sidebarUserName: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 },
-    sidebarUserMeta: { fontSize: 13, color: '#6B7280', marginBottom: 2 },
+    sidebarUserName: {fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4},
+    sidebarUserMeta: {fontSize: 13, color: '#6B7280', marginBottom: 2},
     sidebarLink: {
         minHeight: 48,
         borderRadius: 14,
@@ -1725,15 +1735,15 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         backgroundColor: '#FFFFFF',
     },
-    sidebarLinkText: { fontSize: 15, fontWeight: '600', color: '#111827' },
+    sidebarLinkText: {fontSize: 15, fontWeight: '600', color: '#111827'},
     logoutButton: {
         minHeight: 48,
         borderRadius: 14,
-        backgroundColor: '#3F7FC4',
+        backgroundColor: '#1D4ED8',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
     },
-    logoutButtonText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+    logoutButtonText: {fontSize: 15, fontWeight: '700', color: '#FFFFFF'},
 });

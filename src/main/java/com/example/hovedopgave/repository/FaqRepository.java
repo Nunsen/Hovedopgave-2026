@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface FaqRepository extends JpaRepository<Faq, Integer> {
     List<Faq> findAllByKindOrderByCategoryAscQuestionAsc(String kind);
+
     List<Faq> findAllByKindOrderByCreatedAtDesc(String kind);
 }

@@ -1,26 +1,10 @@
 package com.example.hovedopgave.service;
 
-import com.example.hovedopgave.dto.UserRegistrationRequest;
-import com.example.hovedopgave.dto.UserRegistrationResponse;
-import com.example.hovedopgave.dto.ChatUserSearchResponse;
-import com.example.hovedopgave.dto.UserLoginRequest;
-import com.example.hovedopgave.dto.UserLoginResponse;
-import com.example.hovedopgave.dto.UserProfileResponse;
-import com.example.hovedopgave.dto.UserProfileUpdateRequest;
-import com.example.hovedopgave.dto.UserResetPasswordRequest;
-import com.example.hovedopgave.dto.UserResetPasswordResponse;
+import com.example.hovedopgave.dto.*;
 import com.example.hovedopgave.model.CommunityGroup;
 import com.example.hovedopgave.model.Post;
 import com.example.hovedopgave.model.User;
-import com.example.hovedopgave.repository.ActivationCodeRepository;
-import com.example.hovedopgave.repository.BookingRepository;
-import com.example.hovedopgave.repository.CommentRepository;
-import com.example.hovedopgave.repository.CommunityGroupRepository;
-import com.example.hovedopgave.repository.GroupMemberRepository;
-import com.example.hovedopgave.repository.GroupMessageRepository;
-import com.example.hovedopgave.repository.PostParticipationRepository;
-import com.example.hovedopgave.repository.PostRepository;
-import com.example.hovedopgave.repository.UserRepository;
+import com.example.hovedopgave.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,11 +13,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class UserService {

@@ -1030,7 +1030,7 @@ export async function searchChatUsers(
     userId: number,
     query = '',
 ): Promise<{ data?: ChatUserSearchDto[]; error?: string }> {
-    const params = new URLSearchParams({ userId: String(userId) });
+    const params = new URLSearchParams({userId: String(userId)});
     if (query.trim()) {
         params.set('query', query.trim());
     }
@@ -1129,7 +1129,7 @@ export async function createChatGroup(
 
         return {data: responseBody as ChatGroupDto};
     } catch {
-        return {error: { message: 'Forbindelse til server fejlede.' }};
+        return {error: {message: 'Forbindelse til server fejlede.'}};
     }
 }
 

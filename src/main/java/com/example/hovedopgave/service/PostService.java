@@ -1,10 +1,6 @@
 package com.example.hovedopgave.service;
 
-import com.example.hovedopgave.dto.CommentCreateRequest;
-import com.example.hovedopgave.dto.CommentResponse;
-import com.example.hovedopgave.dto.PostCreateRequest;
-import com.example.hovedopgave.dto.PostParticipationRequest;
-import com.example.hovedopgave.dto.PostResponse;
+import com.example.hovedopgave.dto.*;
 import com.example.hovedopgave.model.Comment;
 import com.example.hovedopgave.model.Post;
 import com.example.hovedopgave.model.PostParticipation;

@@ -1,23 +1,7 @@
 package com.example.hovedopgave.config;
 
-import com.example.hovedopgave.model.ActivationCode;
-import com.example.hovedopgave.model.Booking;
-import com.example.hovedopgave.model.CommunityGroup;
-import com.example.hovedopgave.model.Facility;
-import com.example.hovedopgave.model.Faq;
-import com.example.hovedopgave.model.GroupMember;
-import com.example.hovedopgave.model.GroupMessage;
-import com.example.hovedopgave.model.Post;
-import com.example.hovedopgave.model.User;
-import com.example.hovedopgave.repository.ActivationCodeRepository;
-import com.example.hovedopgave.repository.BookingRepository;
-import com.example.hovedopgave.repository.CommunityGroupRepository;
-import com.example.hovedopgave.repository.FacilityRepository;
-import com.example.hovedopgave.repository.FaqRepository;
-import com.example.hovedopgave.repository.GroupMemberRepository;
-import com.example.hovedopgave.repository.GroupMessageRepository;
-import com.example.hovedopgave.repository.PostRepository;
-import com.example.hovedopgave.repository.UserRepository;
+import com.example.hovedopgave.model.*;
+import com.example.hovedopgave.repository.*;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

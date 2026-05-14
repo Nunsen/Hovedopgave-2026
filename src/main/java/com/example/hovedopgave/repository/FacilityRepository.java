@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface FacilityRepository extends JpaRepository<Facility, Integer> {
     Optional<Facility> findFirstByTypeIgnoreCase(String type);
+
     List<Facility> findAllByTypeIgnoreCaseOrderByNameAsc(String type);
 }

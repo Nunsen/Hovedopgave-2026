@@ -7,5 +7,6 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Integer> {
     java.util.List<User> findAllByOrderByFirstNameAscLastNameAsc();
+
     Optional<User> findByEmailIgnoreCase(String email);
 }

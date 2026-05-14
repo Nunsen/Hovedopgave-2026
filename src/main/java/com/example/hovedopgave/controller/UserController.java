@@ -1,30 +1,12 @@
 package com.example.hovedopgave.controller;
 
-import com.example.hovedopgave.dto.UserRegistrationRequest;
-import com.example.hovedopgave.dto.UserRegistrationResponse;
-import com.example.hovedopgave.dto.ChatUserSearchResponse;
-import com.example.hovedopgave.dto.UserLoginRequest;
-import com.example.hovedopgave.dto.UserLoginResponse;
-import com.example.hovedopgave.dto.UserProfileResponse;
-import com.example.hovedopgave.dto.UserProfileUpdateRequest;
-import com.example.hovedopgave.dto.UserResetPasswordRequest;
-import com.example.hovedopgave.dto.UserResetPasswordResponse;
-import com.example.hovedopgave.dto.ValidationErrorResponse;
+import com.example.hovedopgave.dto.*;
 import com.example.hovedopgave.model.User;
 import com.example.hovedopgave.repository.UserRepository;
 import com.example.hovedopgave.service.UserService;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 

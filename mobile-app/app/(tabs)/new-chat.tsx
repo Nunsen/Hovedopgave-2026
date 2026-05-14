@@ -1,25 +1,16 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {Feather, Ionicons} from '@expo/vector-icons';
+import {useFocusEffect} from '@react-navigation/native';
+import {useRouter} from 'expo-router';
+import {useCallback, useEffect, useState} from 'react';
+import {ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View,} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
-import { useAuth } from '@/context/AuthContext';
-import { ChatUserSearchDto, createDirectChat, searchChatUsers } from '@/lib/api';
+import {useAuth} from '@/context/AuthContext';
+import {ChatUserSearchDto, createDirectChat, searchChatUsers} from '@/lib/api';
 
 export default function NewChatScreen() {
     const router = useRouter();
-    const { user } = useAuth();
+    const {user} = useAuth();
     const [searchText, setSearchText] = useState('');
     const [users, setUsers] = useState<ChatUserSearchDto[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(true);
@@ -85,14 +76,14 @@ export default function NewChatScreen() {
             <View style={styles.container}>
                 <View style={styles.header}>
                     <Pressable style={styles.headerIcon} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={22} color="#2563EB" />
+                        <Ionicons name="arrow-back" size={22} color="#2563EB"/>
                     </Pressable>
                     <Text style={styles.title}>Ny besked</Text>
-                    <View style={styles.headerSpacer} />
+                    <View style={styles.headerSpacer}/>
                 </View>
 
                 <View style={styles.searchField}>
-                    <Feather name="search" size={18} color="#9CA3AF" />
+                    <Feather name="search" size={18} color="#9CA3AF"/>
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Søg efter en person"
@@ -113,7 +104,7 @@ export default function NewChatScreen() {
                             <Text style={styles.groupTitle}>Gruppechat</Text>
                             <Text style={styles.groupSubtitle}>Opret en ny gruppe og vælg medlemmer</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={22} color="#2563EB" />
+                        <Ionicons name="chevron-forward" size={22} color="#2563EB"/>
                     </Pressable>
 
                     <Text style={styles.sectionTitle}>
@@ -121,7 +112,7 @@ export default function NewChatScreen() {
                     </Text>
 
                     {loadingUsers ? (
-                        <ActivityIndicator style={styles.loader} />
+                        <ActivityIndicator style={styles.loader}/>
                     ) : users.length === 0 ? (
                         <Text style={styles.emptyText}>Ingen brugere matcher din søgning.</Text>
                     ) : (
@@ -144,7 +135,7 @@ export default function NewChatScreen() {
                                 </View>
 
                                 {creatingUserId === chatUser.userId ? (
-                                    <ActivityIndicator color="#2563EB" />
+                                    <ActivityIndicator color="#2563EB"/>
                                 ) : null}
                             </Pressable>
                         ))
@@ -156,8 +147,8 @@ export default function NewChatScreen() {
 }
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
-    container: { flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 8 },
+    safeArea: {flex: 1, backgroundColor: '#FFFFFF'},
+    container: {flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 8},
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -170,8 +161,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    headerSpacer: { width: 36, height: 36 },
-    title: { fontSize: 24, fontWeight: '700', color: '#111827' },
+    headerSpacer: {width: 36, height: 36},
+    title: {fontSize: 24, fontWeight: '700', color: '#111827'},
     searchField: {
         minHeight: 48,
         borderRadius: 18,
@@ -182,12 +173,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         marginBottom: 18,
     },
-    searchInput: { flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0 },
-    content: { flex: 1 },
-    contentContainer: { paddingBottom: 24 },
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 14 },
-    loader: { marginTop: 18 },
-    emptyText: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+    searchInput: {flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0},
+    content: {flex: 1},
+    contentContainer: {paddingBottom: 24},
+    sectionTitle: {fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 14},
+    loader: {marginTop: 18},
+    emptyText: {fontSize: 14, color: '#6B7280', lineHeight: 20},
     userRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -202,10 +193,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    avatarText: { fontSize: 16, fontWeight: '700', color: '#1D4ED8' },
-    userTextWrap: { flex: 1 },
-    userName: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 },
-    userSubtitle: { fontSize: 14, color: '#6B7280' },
+    avatarText: {fontSize: 16, fontWeight: '700', color: '#1D4ED8'},
+    userTextWrap: {flex: 1},
+    userName: {fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2},
+    userSubtitle: {fontSize: 14, color: '#6B7280'},
     groupCard: {
         marginBottom: 24,
         borderRadius: 18,
@@ -218,7 +209,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         backgroundColor: '#FFFFFF',
     },
-    groupCardText: { flex: 1, paddingRight: 12 },
-    groupTitle: { fontSize: 17, fontWeight: '700', color: '#111827', marginBottom: 4 },
-    groupSubtitle: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+    groupCardText: {flex: 1, paddingRight: 12},
+    groupTitle: {fontSize: 17, fontWeight: '700', color: '#111827', marginBottom: 4},
+    groupSubtitle: {fontSize: 14, color: '#6B7280', lineHeight: 20},
 });

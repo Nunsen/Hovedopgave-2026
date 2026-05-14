@@ -5,11 +5,7 @@ import com.example.hovedopgave.dto.ActivationCodeResponse;
 import com.example.hovedopgave.dto.ValidationErrorResponse;
 import com.example.hovedopgave.service.ActivationCodeService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/activation-codes")

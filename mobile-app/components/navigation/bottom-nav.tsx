@@ -1,5 +1,5 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
+import {Pressable, StyleSheet, View} from 'react-native';
 
 type BottomNavProps = {
     active: 'home' | 'washing' | 'party' | 'profile' | 'chat';
@@ -20,19 +20,19 @@ export function BottomNav({
                           }: BottomNavProps) {
     return (
         <View style={styles.bottomBar}>
-            <Pressable style={styles.bottomItem} onPress={onChatPress}>
-                <Ionicons
-                    name="chatbubble-ellipses-outline"
-                    size={26}
-                    color={active === 'chat' ? '#111827' : '#9CA3AF'}
-                />
-            </Pressable>
-
             <Pressable style={styles.bottomItem} onPress={onWashingPress}>
                 <MaterialCommunityIcons
                     name="washing-machine"
                     size={28}
                     color={active === 'washing' ? '#111827' : '#9CA3AF'}
+                />
+            </Pressable>
+
+            <Pressable style={styles.bottomItem} onPress={onPartyPress}>
+                <MaterialCommunityIcons
+                    name="party-popper"
+                    size={26}
+                    color={active === 'party' ? '#111827' : '#9CA3AF'}
                 />
             </Pressable>
 
@@ -44,11 +44,11 @@ export function BottomNav({
                 />
             </Pressable>
 
-            <Pressable style={styles.bottomItem} onPress={onPartyPress}>
-                <MaterialCommunityIcons
-                    name="party-popper"
+            <Pressable style={styles.bottomItem} onPress={onChatPress}>
+                <Ionicons
+                    name="chatbubble-ellipses-outline"
                     size={26}
-                    color={active === 'party' ? '#111827' : '#9CA3AF'}
+                    color={active === 'chat' ? '#111827' : '#9CA3AF'}
                 />
             </Pressable>
 

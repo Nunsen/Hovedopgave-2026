@@ -1,23 +1,10 @@
 package com.example.hovedopgave.controller;
 
-import com.example.hovedopgave.dto.CommentCreateRequest;
-import com.example.hovedopgave.dto.PostCreateRequest;
-import com.example.hovedopgave.dto.PostParticipationRequest;
-import com.example.hovedopgave.dto.PostResponse;
-import com.example.hovedopgave.dto.ValidationErrorResponse;
+import com.example.hovedopgave.dto.*;
 import com.example.hovedopgave.service.PostService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 

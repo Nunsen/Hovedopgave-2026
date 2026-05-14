@@ -1,12 +1,6 @@
 package com.example.hovedopgave.service;
 
-import com.example.hovedopgave.dto.ChatGroupCreateRequest;
-import com.example.hovedopgave.dto.ChatDirectConversationRequest;
-import com.example.hovedopgave.dto.ChatGroupMemberAddRequest;
-import com.example.hovedopgave.dto.ChatGroupResponse;
-import com.example.hovedopgave.dto.ChatMessageRequest;
-import com.example.hovedopgave.dto.ChatMessageResponse;
-import com.example.hovedopgave.dto.ChatOverviewResponse;
+import com.example.hovedopgave.dto.*;
 import com.example.hovedopgave.model.CommunityGroup;
 import com.example.hovedopgave.model.GroupMember;
 import com.example.hovedopgave.model.GroupMessage;
@@ -19,12 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.LinkedHashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class GroupService {

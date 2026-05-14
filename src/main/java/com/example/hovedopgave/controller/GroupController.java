@@ -1,28 +1,11 @@
 package com.example.hovedopgave.controller;
 
-import com.example.hovedopgave.dto.ChatGroupCreateRequest;
-import com.example.hovedopgave.dto.ChatDirectConversationRequest;
-import com.example.hovedopgave.dto.ChatGroupMemberAddRequest;
-import com.example.hovedopgave.dto.ChatGroupJoinRequest;
-import com.example.hovedopgave.dto.ChatGroupDeletedEvent;
-import com.example.hovedopgave.dto.ChatGroupResponse;
-import com.example.hovedopgave.dto.ChatMessageRequest;
-import com.example.hovedopgave.dto.ChatMessageResponse;
-import com.example.hovedopgave.dto.ChatOverviewResponse;
-import com.example.hovedopgave.dto.ValidationErrorResponse;
+import com.example.hovedopgave.dto.*;
 import com.example.hovedopgave.service.GroupService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 

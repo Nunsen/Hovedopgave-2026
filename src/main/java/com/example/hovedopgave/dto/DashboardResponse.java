@@ -1,10 +1,6 @@
 package com.example.hovedopgave.dto;
 
-import com.example.hovedopgave.model.Booking;
-import com.example.hovedopgave.model.CommunityGroup;
-import com.example.hovedopgave.model.Facility;
-import com.example.hovedopgave.model.Post;
-import com.example.hovedopgave.model.User;
+import com.example.hovedopgave.model.*;
 
 import java.util.List;
 

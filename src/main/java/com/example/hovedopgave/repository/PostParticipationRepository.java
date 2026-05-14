@@ -7,7 +7,10 @@ import java.util.Optional;
 
 public interface PostParticipationRepository extends JpaRepository<PostParticipation, Integer> {
     long countByPostPostIdAndIsAttendingTrue(Integer postId);
+
     Optional<PostParticipation> findByPostPostIdAndUserUserId(Integer postId, Integer userId);
+
     void deleteAllByPostPostId(Integer postId);
+
     void deleteAllByUserUserId(Integer userId);
 }
