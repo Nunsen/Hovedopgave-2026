@@ -81,20 +81,6 @@ export default function LoginScreen() {
         }
     };
 
-    const handleTestHome = async () => {
-        if (!user) {
-            await login({
-                userId: 1,
-                fullName: 'Demo Beboer',
-                email: 'demo@soranerneshus.dk',
-                role: 'RESIDENT',
-                message: 'Demo login',
-            });
-        }
-
-        router.replace('/home');
-    };
-
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.inner}>
@@ -154,16 +140,6 @@ export default function LoginScreen() {
                     onPress={() => router.push('/register')}
                 >
                     <Text style={styles.registerText}>Opret en konto</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.testButton}
-                    activeOpacity={0.8}
-                    onPress={handleTestHome}
-                >
-                    <Text style={styles.testButtonText}>
-                        {user ? 'Gaa til forside' : 'Test forside'}
-                    </Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -267,15 +243,5 @@ const styles = StyleSheet.create({
         color: '#1D4Ed8',
         fontSize: 17,
         fontWeight: '700',
-    },
-    testButton: {
-        marginTop: 14,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-    },
-    testButtonText: {
-        color: '#6B7280',
-        fontSize: 14,
-        fontWeight: '600',
     },
 });

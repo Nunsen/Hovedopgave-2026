@@ -44,7 +44,7 @@ const iconOptions: IconOption[] = [
     {label: 'Kalender', value: 'calendar-blank-outline', icon: 'calendar-blank-outline'},
     {label: 'Megafon', value: 'bullhorn-outline', icon: 'bullhorn-outline'},
     {label: 'Pakke', value: 'package-variant-closed', icon: 'package-variant-closed'},
-    {label: 'Vaerktoj', value: 'wrench-outline', icon: 'wrench-outline'},
+    {label: 'Værktøj', value: 'wrench-outline', icon: 'wrench-outline'},
     {label: 'Kost', value: 'broom', icon: 'broom'},
 ];
 
@@ -206,7 +206,7 @@ export function PostFormScreen({
                     <View style={styles.formCard}>
                         <FormField
                             label="Titel"
-                            placeholder="Skriv en titel paa opslaget..."
+                            placeholder="Skriv en titel på opslaget..."
                             value={form.title}
                             onChangeText={(value) => updateField('title', value)}
                             error={fieldErrors.title}
@@ -215,7 +215,7 @@ export function PostFormScreen({
 
                         <FormField
                             label="Indhold"
-                            placeholder="Fortael mere om opslaget..."
+                            placeholder="Fortæl mere om opslaget..."
                             value={form.content}
                             onChangeText={(value) => updateField('content', value)}
                             error={fieldErrors.content}
@@ -317,8 +317,8 @@ export function PostFormScreen({
                         <View style={styles.summaryCard}>
                             <View style={styles.summaryHeader}>
                                 <View style={styles.summaryCopy}>
-                                    <Text style={styles.summaryTitle}>Fastgoer opslag</Text>
-                                    <Text style={styles.summaryText}>Fastgjorte opslag vises oeverst paa
+                                    <Text style={styles.summaryTitle}>Fastgør opslag</Text>
+                                    <Text style={styles.summaryText}>Fastgjorte opslag vises øverst på
                                         opslagstavlen.</Text>
                                 </View>
 

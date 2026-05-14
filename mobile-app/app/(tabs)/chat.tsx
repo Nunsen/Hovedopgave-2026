@@ -2,7 +2,7 @@ import {Feather, Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
 import {useFocusEffect} from '@react-navigation/native';
 import {useLocalSearchParams, useRouter} from 'expo-router';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,} from 'react-native';
+import {ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,} from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {BottomNav} from '@/components/navigation/bottom-nav';
@@ -248,7 +248,13 @@ export default function ChatScreen() {
             return;
         }
 
-        const requestedConversation = allConversationGroups.find((group) => group.groupId === requestedGroupId);
+        const requestedConversation = params.tab === 'Grupper'
+            ? joinedGroups.find((group) => group.groupId === requestedGroupId)
+            ?? allConversationGroups.find((group) => group.groupId === requestedGroupId)
+            : params.tab === 'Samtaler'
+                ? directConversations.find((group) => group.groupId === requestedGroupId)
+                ?? allConversationGroups.find((group) => group.groupId === requestedGroupId)
+                : allConversationGroups.find((group) => group.groupId === requestedGroupId);
         if (!requestedConversation) {
             return;
         }
@@ -256,7 +262,7 @@ export default function ChatScreen() {
         setSelectedGroupId(requestedGroupId);
         setIsConversationOpen(params.conversation === '1');
         setActiveTab(requestedConversation.groupType === 'DIRECT' ? 'Samtaler' : 'Grupper');
-    }, [allConversationGroups, params.conversation, params.groupId]);
+    }, [allConversationGroups, directConversations, joinedGroups, params.conversation, params.groupId, params.tab]);
 
     useEffect(() => {
         if (selectedGroupId) {
@@ -651,7 +657,15 @@ export default function ChatScreen() {
         return availableGroups.filter((group) => matchesChatSearch(group, searchValue));
     }, [availableGroups, searchText]);
 
-    const selectedConversation = allConversationGroups.find((group) => group.groupId === selectedGroupId) ?? null;
+    const selectedConversation = activeTab === 'Grupper'
+        ? joinedGroups.find((group) => group.groupId === selectedGroupId)
+            ?? allConversationGroups.find((group) => group.groupId === selectedGroupId)
+            ?? null
+        : activeTab === 'Samtaler'
+            ? directConversations.find((group) => group.groupId === selectedGroupId)
+                ?? allConversationGroups.find((group) => group.groupId === selectedGroupId)
+                ?? null
+            : allConversationGroups.find((group) => group.groupId === selectedGroupId) ?? null;
 
     const navigateBackToAdmin = useCallback(() => {
         router.replace({
@@ -846,12 +860,6 @@ export default function ChatScreen() {
                                     <Text style={styles.groupDescriptionText}>
                                         {groupInfoConversation.description?.trim() || 'Ingen beskrivelse'}
                                     </Text>
-                                    {user?.userId === groupInfoConversation.createdByUserId ? (
-                                        <Pressable style={styles.deleteGroupButton} onPress={handleDeleteGroup}>
-                                            <Text style={styles.deleteGroupButtonText}>Slet gruppe</Text>
-                                        </Pressable>
-                                    ) : null}
-
                                     <View style={styles.groupInfoMemberHeader}>
                                         <Text style={styles.infoMetaLabel}>Tilføj medlemmer</Text>
                                         <Pressable
@@ -880,6 +888,11 @@ export default function ChatScreen() {
                                     <Pressable style={styles.leaveGroupButton} onPress={handleLeaveGroup}>
                                         <Text style={styles.leaveGroupButtonText}>Forlad gruppe</Text>
                                     </Pressable>
+                                    {user?.userId === groupInfoConversation.createdByUserId ? (
+                                        <Pressable style={styles.deleteGroupButton} onPress={handleDeleteGroup}>
+                                            <Text style={styles.deleteGroupButtonText}>Slet gruppe</Text>
+                                        </Pressable>
+                                    ) : null}
                                 </View>
                             ) : null}
                         </View>
@@ -965,7 +978,11 @@ export default function ChatScreen() {
                 </Modal>
 
                 {isConversationOpen && selectedConversation ? (
-                    <View style={styles.conversationScreen}>
+                    <KeyboardAvoidingView
+                        style={styles.conversationScreen}
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+                    >
                         <View style={styles.detailHeader}>
                             <Pressable
                                 style={styles.detailHeaderIcon}
@@ -1078,7 +1095,7 @@ export default function ChatScreen() {
                                 <Ionicons name="send" size={18} color="#FFFFFF"/>
                             </Pressable>
                         </View>
-                    </View>
+                    </KeyboardAvoidingView>
                 ) : (
                     <View style={styles.mainLayout}>
                         <View style={styles.header}>
@@ -1547,7 +1564,7 @@ const styles = StyleSheet.create({
     joinButton: {
         minHeight: 38,
         borderRadius: 12,
-        backgroundColor: '#3F7FC4',
+        backgroundColor: '#1D4ED8',
         paddingHorizontal: 14,
         alignItems: 'center',
         justifyContent: 'center',
@@ -1681,8 +1698,8 @@ const styles = StyleSheet.create({
         minHeight: 48,
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: '#F87171',
-        backgroundColor: '#FEE2E2',
+        borderColor: '#B91C1C',
+        backgroundColor: '#FECACA',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 14,
@@ -1690,7 +1707,7 @@ const styles = StyleSheet.create({
     deleteGroupButtonText: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#991B1B',
+        color: '#7F1D1D',
     },
     sidebarOverlay: {flex: 1, flexDirection: 'row-reverse', backgroundColor: 'rgba(17, 24, 39, 0.28)'},
     sidebarBackdrop: {flex: 1},

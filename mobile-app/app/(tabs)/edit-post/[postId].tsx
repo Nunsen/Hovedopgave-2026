@@ -42,7 +42,7 @@ export default function EditPostScreen() {
         const result = await getPost(resolvedPostId, user.userId);
 
         if (result.error || !result.data) {
-            Alert.alert('Kunne ikke hente opslag', result.error ?? 'Opslaget kunne ikke indlaeses.');
+            Alert.alert('Kunne ikke hente opslag', result.error ?? 'Opslaget kunne ikke indlæses.');
             router.back();
             return;
         }

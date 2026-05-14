@@ -58,6 +58,8 @@ export default function NewPostScreen() {
             title="Nyt opslag"
             submitLabel="Opret opslag"
             submitIcon="plus-square"
+            backIcon="arrow-back"
+            backIconLibrary="ionicons"
             isSubmitting={isSubmitting}
             generalError={generalError}
             submitErrorTitle="Kunne ikke oprette opslag"

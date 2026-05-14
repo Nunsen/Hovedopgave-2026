@@ -5,6 +5,8 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -115,7 +117,7 @@ export default function PostDetailsScreen() {
 
         Alert.alert(
             'Slet opslag',
-            'Er du sikker paa, at du vil slette opslaget? Denne handling kan ikke fortrydes.',
+            'Er du sikker på, at du vil slette opslaget? Denne handling kan ikke fortrydes.',
             [
                 {text: 'Annuller', style: 'cancel'},
                 {
@@ -166,7 +168,7 @@ export default function PostDetailsScreen() {
         }
 
         if (!commentText.trim()) {
-            Alert.alert('Kommentar mangler', 'Skriv en kommentar foerst.');
+            Alert.alert('Kommentar mangler', 'Skriv en kommentar først.');
             return;
         }
 
@@ -208,7 +210,11 @@ export default function PostDetailsScreen() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+            >
                 <View style={styles.header}>
                     <Pressable style={styles.headerButton} onPress={() => router.back()}>
                         <Feather name="arrow-left" size={22} color="#111827"/>
@@ -386,7 +392,7 @@ export default function PostDetailsScreen() {
                         </View>
                     </View>
                 </ScrollView>
-            </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

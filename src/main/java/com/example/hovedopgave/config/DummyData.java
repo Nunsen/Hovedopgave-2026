@@ -1,15 +1,34 @@
 package com.example.hovedopgave.config;
 
-import com.example.hovedopgave.model.*;
-import com.example.hovedopgave.repository.*;
+import com.example.hovedopgave.model.ActivationCode;
+import com.example.hovedopgave.model.Booking;
+import com.example.hovedopgave.model.CommunityGroup;
+import com.example.hovedopgave.model.Facility;
+import com.example.hovedopgave.model.Faq;
+import com.example.hovedopgave.model.GroupMember;
+import com.example.hovedopgave.model.GroupMessage;
+import com.example.hovedopgave.model.Post;
+import com.example.hovedopgave.model.User;
+import com.example.hovedopgave.repository.ActivationCodeRepository;
+import com.example.hovedopgave.repository.BookingRepository;
+import com.example.hovedopgave.repository.CommunityGroupRepository;
+import com.example.hovedopgave.repository.FacilityRepository;
+import com.example.hovedopgave.repository.FaqRepository;
+import com.example.hovedopgave.repository.GroupMemberRepository;
+import com.example.hovedopgave.repository.GroupMessageRepository;
+import com.example.hovedopgave.repository.PostRepository;
+import com.example.hovedopgave.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -36,6 +55,7 @@ public class DummyData {
             GroupMessageRepository groupMessageRepository
     ) {
         return args -> {
+            seedAdminUser(userRepository);
 
             Optional<User> firstUser = userRepository.findAll().stream().findFirst();
             if (firstUser.isEmpty()) {
@@ -44,7 +64,8 @@ public class DummyData {
 
             User user = firstUser.get();
 
-            Optional<ActivationCode> sharedActivationCode = activationCodeRepository.findByCodeIgnoreCase("HOVEDOPGAVE-QR-2026");
+            Optional<ActivationCode> sharedActivationCode =
+                    activationCodeRepository.findByCodeIgnoreCase("HOVEDOPGAVE-QR-2026");
 
             if (sharedActivationCode.isEmpty()) {
                 ActivationCode activationCode = new ActivationCode();
@@ -73,9 +94,10 @@ public class DummyData {
             }
 
             if (postRepository.count() == 0) {
-                postRepository.save(createPost(user,
+                postRepository.save(createPost(
+                        user,
                         "Vandafbrydelse i morgen",
-                        "Der vil vare vandafbrydelse tirsdag d. 11/06 fra 08.00 til 14.00 pga. vedligeholdelse.",
+                        "Der vil være vandafbrydelse tirsdag d. 11/06 fra 08.00 til 14.00 pga. vedligeholdelse.",
                         "Vigtig info",
                         "bullhorn-outline",
                         true,
@@ -86,9 +108,10 @@ public class DummyData {
                         LocalDateTime.now().minusDays(1)
                 ));
 
-                postRepository.save(createPost(user,
-                        "Sommerfest 2024",
-                        "Saa er det tid til aarets sommerfest. Saet kryds i kalenderen loerdag d. 15/06.",
+                postRepository.save(createPost(
+                        user,
+                        "Sommerfest 2026",
+                        "Så er det tid til årets sommerfest. Sæt kryds i kalenderen lørdag d. 15/06.",
                         "Begivenhed",
                         "calendar-blank-outline",
                         false,
@@ -99,11 +122,12 @@ public class DummyData {
                         LocalDateTime.now().minusDays(2)
                 ));
 
-                postRepository.save(createPost(user,
-                        "Pakke til afhentning",
-                        "Der er en pakke til dig i administrationen. Husk gyldigt ID ved afhentning.",
+                postRepository.save(createPost(
+                        user,
+                        "Varsling om malerarbejde",
+                        "Der vil mellem 12-14 blive malet på gang 3.",
                         "Generelt",
-                        "package-variant-closed",
+                        "bullhorn-outline",
                         false,
                         null,
                         null,
@@ -112,8 +136,9 @@ public class DummyData {
                         LocalDateTime.now().minusDays(3)
                 ));
 
-                postRepository.save(createPost(user,
-                        "Rengøring af fællesomraader",
+                postRepository.save(createPost(
+                        user,
+                        "Rengøring af fællesområder",
                         "Husk at hjælpe med at holde vores fællesområder rene og pæne.",
                         "Generelt",
                         "broom",
@@ -125,7 +150,8 @@ public class DummyData {
                         LocalDateTime.now().minusDays(5)
                 ));
 
-                postRepository.save(createPost(user,
+                postRepository.save(createPost(
+                        user,
                         "Elevator ude af drift",
                         "Elevatoren forventes ude af drift til og med fredag d. 14/06.",
                         "Vigtig info",
@@ -226,7 +252,7 @@ public class DummyData {
                 communityGroupRepository,
                 user,
                 "Gang gruppe",
-                "Faelles beskeder til naboer paa samme gang."
+                "Fælles beskeder til naboer på samme gang."
         );
         CommunityGroup secondGroup = createGroup(
                 communityGroupRepository,
@@ -247,7 +273,7 @@ public class DummyData {
 
         createGroupMessage(groupMessageRepository, firstGroup, user, "Velkommen til gruppen for gangen.");
         createGroupMessage(groupMessageRepository, secondGroup, user, "Her kan I koordinere praktiske ting.");
-        createGroupMessage(groupMessageRepository, thirdGroup, user, "Brug gruppen til faelles information og dialog.");
+        createGroupMessage(groupMessageRepository, thirdGroup, user, "Brug gruppen til fælles information og dialog.");
     }
 
     private void resetBookingsOnce(BookingRepository bookingRepository) {
@@ -266,7 +292,7 @@ public class DummyData {
 
             Files.createFile(BOOKINGS_RESET_MARKER);
         } catch (IOException exception) {
-            throw new UncheckedIOException("Kunne ikke oprette booking reset-markoer.", exception);
+            throw new UncheckedIOException("Kunne ikke oprette booking reset-markør.", exception);
         }
     }
 
@@ -432,5 +458,37 @@ public class DummyData {
         message.setMessage(messageValue);
         message.setSentAt(LocalDateTime.now().minusDays(1));
         groupMessageRepository.save(message);
+    }
+
+    private void seedAdminUser(UserRepository userRepository) {
+        User adminUser = userRepository.findByEmailIgnoreCase("admin@gmail.com")
+                .orElseGet(User::new);
+
+        adminUser.setFirstName("Administrator");
+        adminUser.setLastName("");
+        adminUser.setEmail("admin@gmail.com");
+        adminUser.setPhoneNumber("28173465");
+        adminUser.setBirthDate(LocalDate.of(1987, 4, 16));
+        adminUser.setApartmentNumber("Ukendt");
+        adminUser.setPasswordHash(hashPassword("12345678"));
+        adminUser.setIsActivated(true);
+        adminUser.setRole("ADMIN");
+        userRepository.save(adminUser);
+    }
+
+    private String hashPassword(String password) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            byte[] hashedBytes = messageDigest.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder();
+
+            for (byte hashedByte : hashedBytes) {
+                builder.append(String.format("%02x", hashedByte));
+            }
+
+            return builder.toString();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Kunne ikke hashe adgangskoden.", exception);
+        }
     }
 }

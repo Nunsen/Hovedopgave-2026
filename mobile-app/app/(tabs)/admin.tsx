@@ -1781,7 +1781,14 @@ export default function AdminScreen() {
                                                         : 'Overblik'}
                     </Text>
 
-                    {activeView === 'facilities' || activeView === 'posts' || activeView === 'requests' || activeView === 'requestDetail' ? (
+                    {activeView === 'overview'
+                    || activeView === 'bookings'
+                    || activeView === 'users'
+                    || activeView === 'userDetail'
+                    || activeView === 'facilities'
+                    || activeView === 'posts'
+                    || activeView === 'requests'
+                    || activeView === 'requestDetail' ? (
                         <View style={styles.iconButtonPlaceholder}/>
                     ) : (
                         <View style={styles.iconButton}>
