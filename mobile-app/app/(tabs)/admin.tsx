@@ -48,6 +48,7 @@ type AdminView =
 type BookingTab = 'all' | 'washing' | 'party';
 type UserTab = 'all' | 'residents' | 'admins';
 type FacilityTab = 'washing' | 'party';
+type AdminNavTarget = 'overview' | 'bookings' | 'users' | 'posts' | 'facilities' | 'requests';
 
 function formatBookingDate(booking: DashboardBookingDto) {
     const date = booking.date
@@ -201,6 +202,43 @@ export default function AdminScreen() {
     const [updatingFacilityId, setUpdatingFacilityId] = useState<number | null>(null);
     const [updatingRequestId, setUpdatingRequestId] = useState<number | null>(null);
     const [startingChatUserId, setStartingChatUserId] = useState<number | null>(null);
+
+    const navigateToAdminView = useCallback((target: AdminNavTarget) => {
+        setIsSidebarOpen(false);
+
+        if (target === 'overview') {
+            setSelectedBooking(null);
+            setSelectedUserProfile(null);
+            setSelectedRequest(null);
+            setActiveView('overview');
+            return;
+        }
+
+        if (target === 'bookings') {
+            setSelectedBooking(null);
+            setActiveView('bookings');
+            return;
+        }
+
+        if (target === 'users') {
+            setSelectedUserProfile(null);
+            setActiveView('users');
+            return;
+        }
+
+        if (target === 'posts') {
+            setActiveView('posts');
+            return;
+        }
+
+        if (target === 'facilities') {
+            setActiveView('facilities');
+            return;
+        }
+
+        setSelectedRequest(null);
+        setActiveView('requests');
+    }, []);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -657,6 +695,25 @@ export default function AdminScreen() {
     const handleToggleSection = (section: AdminSection) => {
         setExpandedSection((currentSection) => (currentSection === section ? null : section));
     };
+
+    const activeNavTarget: AdminNavTarget =
+        activeView === 'bookingDetail'
+            ? 'bookings'
+            : activeView === 'userDetail'
+                ? 'users'
+                : activeView === 'requestDetail'
+                    ? 'requests'
+                    : activeView === 'bookings'
+                        ? 'bookings'
+                        : activeView === 'users'
+                            ? 'users'
+                            : activeView === 'posts'
+                                ? 'posts'
+                                : activeView === 'facilities'
+                                    ? 'facilities'
+                                    : activeView === 'requests'
+                                        ? 'requests'
+                                        : 'overview';
 
     const renderOverview = () => (
         <ScrollView
@@ -1647,11 +1704,7 @@ export default function AdminScreen() {
 
                                 <Pressable
                                     style={styles.sidebarLink}
-                                    onPress={() => {
-                                        setIsSidebarOpen(false);
-                                        setSelectedBooking(null);
-                                        setActiveView('overview');
-                                    }}
+                                    onPress={() => navigateToAdminView('overview')}
                                 >
                                     <Ionicons name="grid-outline" size={20} color="#111827"/>
                                     <Text style={styles.sidebarLinkText}>Dashboard</Text>
@@ -1659,10 +1712,7 @@ export default function AdminScreen() {
 
                                 <Pressable
                                     style={styles.sidebarLink}
-                                    onPress={() => {
-                                        setIsSidebarOpen(false);
-                                        setActiveView('bookings');
-                                    }}
+                                    onPress={() => navigateToAdminView('bookings')}
                                 >
                                     <Ionicons name="calendar-outline" size={20} color="#111827"/>
                                     <Text style={styles.sidebarLinkText}>Bookinger</Text>
@@ -1670,11 +1720,7 @@ export default function AdminScreen() {
 
                                 <Pressable
                                     style={styles.sidebarLink}
-                                    onPress={() => {
-                                        setIsSidebarOpen(false);
-                                        setSelectedUserProfile(null);
-                                        setActiveView('users');
-                                    }}
+                                    onPress={() => navigateToAdminView('users')}
                                 >
                                     <Ionicons name="people-outline" size={20} color="#111827"/>
                                     <Text style={styles.sidebarLinkText}>Brugere</Text>
@@ -1682,10 +1728,7 @@ export default function AdminScreen() {
 
                                 <Pressable
                                     style={styles.sidebarLink}
-                                    onPress={() => {
-                                        setIsSidebarOpen(false);
-                                        setActiveView('posts');
-                                    }}
+                                    onPress={() => navigateToAdminView('posts')}
                                 >
                                     <MaterialCommunityIcons name="bullhorn-outline" size={20} color="#111827"/>
                                     <Text style={styles.sidebarLinkText}>Opslag</Text>
@@ -1693,10 +1736,7 @@ export default function AdminScreen() {
 
                                 <Pressable
                                     style={styles.sidebarLink}
-                                    onPress={() => {
-                                        setIsSidebarOpen(false);
-                                        setActiveView('facilities');
-                                    }}
+                                    onPress={() => navigateToAdminView('facilities')}
                                 >
                                     <MaterialCommunityIcons name="office-building-outline" size={20} color="#111827"/>
                                     <Text style={styles.sidebarLinkText}>Faciliteter</Text>
@@ -1704,11 +1744,7 @@ export default function AdminScreen() {
 
                                 <Pressable
                                     style={styles.sidebarLink}
-                                    onPress={() => {
-                                        setIsSidebarOpen(false);
-                                        setSelectedRequest(null);
-                                        setActiveView('requests');
-                                    }}
+                                    onPress={() => navigateToAdminView('requests')}
                                 >
                                     <Ionicons name="document-text-outline" size={20} color="#111827"/>
                                     <Text style={styles.sidebarLinkText}>Henvendelser</Text>
@@ -1831,9 +1867,62 @@ export default function AdminScreen() {
                                         ? renderFacilitiesView()
                                         : activeView === 'posts'
                                             ? renderPostsView()
-                                            : activeView === 'requests'
+                                        : activeView === 'requests'
                                                 ? renderRequestsView()
                                                 : renderOverview()}
+
+                <View style={styles.adminBottomBar}>
+                    <Pressable style={styles.adminBottomItem} onPress={() => navigateToAdminView('bookings')}>
+                        <Ionicons
+                            name="calendar-outline"
+                            size={22}
+                            color={activeNavTarget === 'bookings' ? '#111827' : '#9CA3AF'}
+                        />
+                    </Pressable>
+
+                    <Pressable style={styles.adminBottomItem} onPress={() => navigateToAdminView('users')}>
+                        <Ionicons
+                            name="people-outline"
+                            size={22}
+                            color={activeNavTarget === 'users' ? '#111827' : '#9CA3AF'}
+                        />
+                    </Pressable>
+
+                    <Pressable
+                        style={styles.adminBottomItem}
+                        onPress={() => navigateToAdminView('overview')}
+                    >
+                        <Ionicons
+                            name="grid-outline"
+                            size={24}
+                            color={activeNavTarget === 'overview' ? '#111827' : '#9CA3AF'}
+                        />
+                    </Pressable>
+
+                    <Pressable style={styles.adminBottomItem} onPress={() => navigateToAdminView('posts')}>
+                        <MaterialCommunityIcons
+                            name="bullhorn-outline"
+                            size={22}
+                            color={activeNavTarget === 'posts' ? '#111827' : '#9CA3AF'}
+                        />
+                    </Pressable>
+
+                    <Pressable style={styles.adminBottomItem} onPress={() => navigateToAdminView('facilities')}>
+                        <MaterialCommunityIcons
+                            name="office-building-outline"
+                            size={22}
+                            color={activeNavTarget === 'facilities' ? '#111827' : '#9CA3AF'}
+                        />
+                    </Pressable>
+
+                    <Pressable style={styles.adminBottomItem} onPress={() => navigateToAdminView('requests')}>
+                        <Ionicons
+                            name="document-text-outline"
+                            size={22}
+                            color={activeNavTarget === 'requests' ? '#111827' : '#9CA3AF'}
+                        />
+                    </Pressable>
+                </View>
             </View>
         </SafeAreaView>
     );
@@ -1853,6 +1942,23 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
+    },
+    adminBottomBar: {
+        minHeight: 78,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        paddingTop: 8,
+        paddingBottom: 8,
+    },
+    adminBottomItem: {
+        flex: 1,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     header: {
         flexDirection: 'row',
