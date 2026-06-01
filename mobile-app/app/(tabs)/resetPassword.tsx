@@ -38,7 +38,7 @@ export default function ResetPasswordScreen() {
         if (!form.newPassword.trim()) {
             nextErrors.newPassword = 'Nyt kodeord er obligatorisk.';
         } else if (form.newPassword.length < 8) {
-            nextErrors.newPassword = 'Det nye kodeord skal mindst vaere 8 tegn.';
+            nextErrors.newPassword = 'Det nye kodeord skal mindst være 8 tegn.';
         }
 
         return nextErrors;

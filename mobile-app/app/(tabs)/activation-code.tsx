@@ -24,7 +24,7 @@ export default function ActivationCodeScreen() {
         setErrorMessage(null);
 
         if (Platform.OS === 'web') {
-            setErrorMessage('QR virker kun paa mobil (Expo Go)');
+            setErrorMessage('QR virker kun på mobil (Expo Go)');
             return;
         }
 

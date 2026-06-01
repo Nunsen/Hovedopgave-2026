@@ -105,7 +105,7 @@ export default function LoginScreen() {
                 {fieldErrors.email ? <Text style={styles.fieldError}>{fieldErrors.email}</Text> : null}
 
                 <TextInput
-                    placeholder="Password"
+                    placeholder="Adgangskode"
                     placeholderTextColor="#8A8A8A"
                     secureTextEntry
                     style={[styles.input, fieldErrors.password ? styles.inputError : null]}
